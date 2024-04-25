@@ -57,13 +57,13 @@ function process_body(mod, name, body)
     sol_vars = Symbol[]
     sol_body = process_body!(mod, sol_vars, sol_body)
     problemdef[:sol_body] = sol_body
-    problemdef[:sol_vars] = sol_vars
+    problemdef[:sol_vars] = unique(sol_vars)
     #
     body_args = map(x->is_macro(x, :solution) ? :(:solution) : x, body_args)
     cond_body = Expr(body.head, body_args...)
     cond_vars = Symbol[]
     cond_body = process_body!(mod, cond_vars, cond_body)
-    problemdef[:cond_vars] = cond_vars
+    problemdef[:cond_vars] = unique(cond_vars)
     problemdef[:cond_body] = cond_body
 
     return problemdef
