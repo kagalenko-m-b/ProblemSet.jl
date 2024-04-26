@@ -20,21 +20,6 @@ latex_preamble = """
 \\usepackage{bookmark}
 \\setmainfont{Liberation Serif}
 \\setsansfont{Liberation Sans}\n\n"""
-latex_preamble_ru = """
-\\documentclass[a4paper,12pt,notitlepage]{paper}
-\\usepackage{amsmath}
-\\usepackage[left=1cm,right=1cm,top=1cm,bottom=1cm]{geometry}
-\\pagenumbering{gobble}
-\\usepackage{fontspec}
-\\usepackage{polyglossia}
-\\usepackage{csvmerge}
-\\usepackage{float}
-\\usepackage{graphicx}
-\\usepackage{bookmark}
-\\setdefaultlanguage{russian}
-
-\\setmainfont{Liberation Serif}
-\\setsansfont{Liberation Sans}\n\n"""
 
 function select_problems(subsets::Vector{<:Pair{<:Integer,<:AbstractRange{<:Integer}}})
     idx = Int[]
