@@ -21,10 +21,16 @@ latex_preamble = """
 \\setmainfont{Liberation Serif}
 \\setsansfont{Liberation Sans}\n\n"""
 
-function select_problems(subsets::Vector{<:Pair{<:Integer,<:AbstractRange{<:Integer}}})
+function select_problems(
+    Nmax::Integer, subsets::Vector{<:Pair{<:Integer,<:AbstractRange{<:Integer}}}
+    )
     idx = Int[]
     for s in subsets
         N,range = s
+        if maximum(range) > Nmax
+            error("subset specification $(s) has greater range than the number"
+                  *"of available problems: $Nmax")
+        end
         idx_r = randperm(length(range))
         append!(idx, range[idx_r[1:N]])
     end
@@ -33,8 +39,10 @@ function select_problems(subsets::Vector{<:Pair{<:Integer,<:AbstractRange{<:Inte
     return idx
 end
 
-function select_problems(subset::Pair{<:Integer,<:AbstractRange{<:Integer}})
-    return select_problems([subset])
+function select_problems(
+    Nmax::Integer, subset::Pair{<:Integer,<:AbstractRange{<:Integer}}
+                         )
+    return select_problems(Nmax[subset])
 end
 
 """

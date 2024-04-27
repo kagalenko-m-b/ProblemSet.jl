@@ -12,6 +12,9 @@ macro problemset(set_name, set_body)
         prob.args[3] = Symbol(string(set_name)*'_'*string(prob.args[3]))
         push!(prob_names, prob.args[3])
     end
+    if !allunique(prob_names)
+        error("problem names must be unique within the set")
+    end
     quote
         $(esc(set_body))
         $(esc(set_name)) = [$([:($(esc(prob))) for prob in prob_names]...)]
