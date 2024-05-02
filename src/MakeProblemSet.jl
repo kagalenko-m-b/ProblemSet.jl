@@ -78,12 +78,13 @@ function problemset_latex(
     rng_seed::Integer
     )
     N = length(names)
+    M = length(problems)
     txt = "\\begin{document}\n"
     txt_sol = txt
     for n in 1:N
         txt *= "\\section{$(names[n])}\n"
         txt_sol *= "\\section{$(names[n])}\n"
-        problems_active = select_problems(subsets)
+        problems_active = select_problems(M, subsets)
         for p in problems_active
             Random.seed!(rng_seed + n + p)
             pr = problems[p]
