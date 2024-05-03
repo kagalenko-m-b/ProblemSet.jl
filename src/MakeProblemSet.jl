@@ -41,8 +41,8 @@ end
 
 function select_problems(
     Nmax::Integer, subset::Pair{<:Integer,<:AbstractRange{<:Integer}}
-                         )
-    return select_problems(Nmax[subset])
+    )
+    return select_problems(Nmax, [subset])
 end
 
 """
