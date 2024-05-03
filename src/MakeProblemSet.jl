@@ -72,7 +72,7 @@ julia> write("solutions.tex", latex_preamble*txt);
 ```
 """
 function problemset_latex(
-    names::AbstractVector{String},
+    names::AbstractVector{<:AbstractString},
     problems::AbstractVector{Function},
     subsets::Union{Pair,Vector{<:Pair}},
     rng_seed::Integer
@@ -88,8 +88,9 @@ function problemset_latex(
         for p in problems_active
             Random.seed!(rng_seed + n + p)
             pr = problems[p]
-            condition = build_text(:text, pr)
-            solution =  build_text(:solution_text, pr)
+            data = pr()
+            condition = build_text(:text, pr, data)
+            solution =  build_text(:solution_text, pr, data)
             txt *= "\\underline{Задача $(p):}\n\n$(condition)\n\n"
             txt_sol *= "\\underline{Задача $(p):}\n\n$(solution)\n\n"
         end
@@ -101,8 +102,7 @@ function problemset_latex(
     return txt,txt_sol
 end
 
-function build_text(kind::Symbol, pr::Function)
-    data = pr()
+function build_text(kind::Symbol, pr::Function, data::Tuple)
     vars = pr(Val(:vars))
     str = pr(Val(kind))
     ms = eachmatch(r"%(\w+)%", str)
