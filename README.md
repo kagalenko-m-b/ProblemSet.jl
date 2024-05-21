@@ -1,5 +1,7 @@
 # MakeProblemSet
 
+[![Build Status](https://github.com/kagalenko-m-b/MakeProblemSet.jl/workflows/CI/badge.svg)](https://github.com/kagalenko-m-b/MakeProblemSet.jl/actions)
+
 The goal of this project is to facilitate the creation of problem assignments
 for a group of students. A problem set consists of several problem templates with
 text and placeholder variables. Percentage signs before and after mark the

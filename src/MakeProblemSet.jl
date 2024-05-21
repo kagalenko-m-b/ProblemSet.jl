@@ -72,18 +72,18 @@ julia> write("solutions.tex", latex_preamble*txt);
 ```
 """
 function problemset_latex(
-    names::AbstractVector{<:AbstractString},
+    student_names::AbstractVector{<:AbstractString},
     problems::AbstractVector{Function},
     subsets::Union{Pair,Vector{<:Pair}},
     rng_seed::Integer
     )
-    N = length(names)
+    N = length(student_names)
     M = length(problems)
     txt = "\\begin{document}\n"
     txt_sol = txt
     for n in 1:N
-        txt *= "\\section{$(names[n])}\n"
-        txt_sol *= "\\section{$(names[n])}\n"
+        txt *= "\\section{$(student_names[n])}\n"
+        txt_sol *= "\\section{$(student_names[n])}\n"
         problems_active = select_problems(M, subsets)
         for p in problems_active
             Random.seed!(rng_seed + n + p)
@@ -100,6 +100,15 @@ function problemset_latex(
     txt *= "\\end{document}\n"
     txt_sol *= "\\end{document}\n"
     return txt,txt_sol
+end
+function problemset_latex(
+    number_variants::Integer,
+    problems::AbstractVector{Function},
+    subsets::Union{Pair,Vector{<:Pair}},
+    rng_seed::Integer
+    )
+    nms = ["$(k)" for k in 1:number_variants]
+    problemset_latex(nms, problems, subsets,  rng_seed)
 end
 
 function build_text(kind::Symbol, pr::Function, data::Tuple)

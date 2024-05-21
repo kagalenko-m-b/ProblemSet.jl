@@ -1,48 +1,110 @@
 using MakeProblemSet
 using Test
 
-ex_body = :(begin
-                pool_size_liters ~ rand(1000:10:2000)
-                inflow_liters_sec ~ rand(10:20)
-                outflow_max = inflow_liters_sec ÷ 2
-                outflow_liters_sec ~ rand(1:outflow_max)
-                @solution begin
-                    fill_rate = inflow_liters_sec - outflow_liters_sec
-                    time_to_fill = pool_size_liters / fill_rate
-                    time_to_fill_min ~ round(time_to_fill / 60, digits=3)
-                    leaked_liters ~ round(time_to_fill*outflow_liters_sec, digits=3)
-                end
-                @text """
-                 An empty pool can hold %pool_size_liters% liters of water. Pipe
-                 fills it at the rate %inflow_liters_sec%~liters/sec while another
-                 drains it at the rate %outflow_liters_sec%~liters/sec. How many minutes
-                 will it take to fill the pool and how many liters of water will
-                 leak out by the time the pool is full?
-                     """
-                @text_solution """
-                It will take %time_to_fill_min% minutes to fill the pool and
-                %leaked_liters%~liters of water will leak out.
-                """
-            end)
+function cleanup_string(str::AbstractString)
+    str = sub_add(Val(:text))
+    str = replace(str, '\n'=>' ')
+    str = replace(str, r" +"=>' ')
+    str = strip(str)
 
-ex_set =:(begin
-              @problem p1 begin
-                  pool_size_liters ~ rand(1000:10:2000)
-                  inflow_liters_sec ~ rand(20:30)
-                  outflow_max = inflow_liters_sec÷2
-                  outflow_liters_sec ~ rand(5:outflow_max)
-                  @solution time_to_fill_min ~ pool_size_liters/(inflow_liters_sec-outflow_liters_sec)/60
-              end
-              @problem p2 begin
-                  x ~ rand(1:3)
-                  y ~ rand(2:5)
-                  @solution xy ~ x + y
-              end
-          end)
-
-
-
-
-@testset "MakeProblemSet.jl" begin
-    # Write your tests here.
+    return str
 end
+
+problem_1 = :(@problem sub_add begin
+               z ~ rand(7:9)
+               w ~ rand(1:5)
+               @solution begin
+                   zw_sub ~ z - w
+                   zw_add ~ z + w
+               end
+               @text raw"""
+Find the difference \(c = a - b\) and sum  \(d = a + b\)
+of two values: \(a = %z%\) and \(b = %w%\)
+               """
+               @text_solution raw"""
+Difference is equal to  \(c = %zw_sub%\), sum is equal to  \(c = %zw_add%\)
+                                  """
+           end)
+
+problem_2 = :(@problem sub begin
+                  z ~ rand(7:9)
+                  w ~ rand(1:5)
+                  @solution begin
+                      zw_sub ~ z - w
+                  end
+                  @text raw"""
+Find the difference \(c = a - b\) of two values: \(a = %zz%\) and \(b = %w%\)
+                             """
+                  @text_solution raw"""
+             Difference is equal to  \(c = %zw_sub%\)
+               """
+              end)
+
+problem_3 = :(@problem add begin
+                           z ~ rand(7:9)
+                           w ~ rand(1:5)
+                           @solution begin
+                               zw_add ~ z + w
+                           end
+                           @text raw"""
+Find the sum \(c = a + b\) of two values: \(a = %z%\) and \(b = %w%\)
+        """
+                           @text_solution raw"""
+             Sum is equal to  \(c = %zww_add%\)
+        """
+                       end)
+problem_set = :(@problemset test_problem_set begin
+                    $problem_1
+                    $problem_2
+                    $problem_3                       
+                end)
+
+@testset "Single problem" begin
+    pr = macroexpand( @__MODULE__, problem_1);
+    eval(pr)
+    Base.remove_linenums!(pr)
+    @test length(pr.args) == 5
+    @test pr.args[1] == Base.remove_linenums!(:(function sub_add(; )
+                                                   z = rand(7:9)
+                                                   w = rand(1:5)
+                                                   (zw_sub, zw_add) = sub_add(z, w)
+                                                   return (z, w, zw_sub, zw_add)
+                                               end)
+                                             )
+
+    @test pr.args[3] ==  Base.remove_linenums!(:(function sub_add(z, w; )
+                                                    begin
+                                                        zw_sub = z - w
+                                                        zw_add = z + w
+                                                    end
+                                                    return (zw_sub, zw_add)
+                                                end)
+                                              )
+    #
+    data_1 = sub_add()
+    @test all(sub_add(data_1[1:2]...) .== data_1[3:end])
+    #
+    @test sub_add(Val(:vars)) == [:z, :w, :zw_sub, :zw_add]
+    #
+    @test cleanup_string(sub_add(Val(:text))) == (
+        "Find the difference \\(c = a - b\\) and sum \\(d = a + b\\) "
+        * "of two values: \\(a = %z%\\) and \\(b = %w%\\)")
+    @test cleanup_string(sub_add(Val(:solution_text))) == (
+        "Find the difference \\(c = a - b\\) and sum \\(d = a + b\\) of two values: "
+        * "\\(a = %z%\\) and \\(b = %w%\\)")
+    #
+    @test_logs (:warn, r" zz | zww_add ") macroexpand( @__MODULE__, problem_2)
+    @test_logs (:warn, r" zww_add ") macroexpand( @__MODULE__, problem_3);
+end
+
+@testset "Problem set" begin
+    pr_set = macroexpand( @__MODULE__, problem_set, recursive=:false);
+    Base.remove_linenums!(pr_set)
+    @test length(pr_set.args) == 2
+    @test pr_set.args[2] == :(test_problem_set = [test_problem_set_sub_add,
+                                                  test_problem_set_sub,
+                                                  test_problem_set_add])
+end
+
+
+

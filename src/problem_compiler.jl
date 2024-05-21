@@ -2,7 +2,7 @@
 """
     @problemset(set_name, set_body)
 
-Macro to specify a problem.
+Macro to specify a set of problems.
 """
 macro problemset(set_name, set_body)
     @assert set_body.head == :block "Syntax error: Expecting block of definitions!"
@@ -27,13 +27,15 @@ end
 Macro to specify a problem.
 """
 macro problem(name, body)
-    #dump(body)
     pr = problem(__module__, __source__, name, body)
     return esc(pr)
 end
 
 function problem(mod, linenumbernode, name, body)
     problemdef = process_body(mod, name, body)
+    vars = [problemdef[:cond_vars]; problemdef[:sol_vars]]
+    check_text_variables(string(problemdef[:cond_text]), vars)
+    check_text_variables(string(problemdef[:sol_text]), vars)
     return build_output(problemdef, linenumbernode)
 end
 
@@ -194,3 +196,14 @@ function warn_empty(body)
     return nothing
 end
 
+function check_text_variables(str::AbstractString, vars::AbstractVector{Symbol})
+    ms = eachmatch(r"%(\w+)%", str)
+    vars_text = [Symbol(m.captures[1]) for m in ms]
+    for k in 1:length(vars_text)
+        v = vars_text[k]
+        idx = findfirst(x->x===v, vars)
+        if isnothing(idx)
+            @warn("text variable $(v) is not in problem variables")
+        end
+    end
+end
