@@ -52,7 +52,15 @@ Find the sum \(c = a + b\) of two values: \(a = %z%\) and \(b = %w%\)
                            @text_solution raw"""
              Sum is equal to  \(c = %zww_add%\)
         """
-                       end)
+              end)
+
+problem_4 = :(@problem dupl begin
+                  x ~ 1
+                  y ~ 2
+                  x ~ 3
+                  @solution begin z ~ 1; end
+              end)
+
 problem_set = :(@problemset test_problem_set begin
                     $problem_1
                     $problem_2
@@ -95,6 +103,7 @@ problem_set = :(@problemset test_problem_set begin
     #
     @test_logs (:warn, r" zz | zww_add ") macroexpand( @__MODULE__, problem_2)
     @test_logs (:warn, r" zww_add ") macroexpand( @__MODULE__, problem_3);
+    @test_logs (:warn, r"duplicate") macroexpand( @__MODULE__, problem_4);
 end
 
 @testset "Problem set" begin

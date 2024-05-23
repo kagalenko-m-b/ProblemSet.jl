@@ -75,13 +75,17 @@ function problemset_latex(
     student_names::AbstractVector{<:AbstractString},
     problems::AbstractVector{Function},
     subsets::Union{Pair,Vector{<:Pair}},
-    rng_seed::Integer
+    rng_seed::Integer;
+    set_title::String=""
     )
     N = length(student_names)
     M = length(problems)
     txt = "\\begin{document}\n"
     txt_sol = txt
     for n in 1:N
+        if !isempty(set_title)
+            txt *= "{\\centering\n\\textbf{$set_title}\\\\\n}"
+        end
         txt *= "\\section{$(student_names[n])}\n"
         txt_sol *= "\\section{$(student_names[n])}\n"
         problems_active = select_problems(M, subsets)

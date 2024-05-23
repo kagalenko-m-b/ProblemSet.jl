@@ -48,26 +48,30 @@ function process_body(mod, name, body)
     problemdef = Dict{Symbol,Any}(:name=>name,:kwargs=>[],:args=>[])
     cond_text = filter(x->is_macro(x, :text), body.args)
     @assert length(cond_text) <= 1 "more than one @text in problem"
-    isempty(cond_text) || (problemdef[:cond_text] = macro_body(cond_text[], :text))
+    problemdef[:cond_text] = isempty(cond_text) ? "" : macro_body(cond_text[], :text)
     body_args = filter(x->!is_macro(x, :text), body.args)
     #
     sol_text = filter(x->is_macro(x, :text_solution), body_args)
     @assert length(sol_text) <= 1 "more than one @solution_text in problem"
-    isempty(sol_text) || (problemdef[:sol_text] = macro_body(sol_text[], :text_solution))
+    problemdef[:sol_text] = isempty(sol_text) ? "" : macro_body(sol_text[], :text_solution)
     filter!(x->!is_macro(x, :text_solution), body_args)
     #
     sol_body = filter(x->is_macro(x, :solution), body_args)
-    @assert length(sol_body) == 1 "each problem must have exactly one @solution"
-    sol_body = macro_body(sol_body[], :solution)
+    @assert length(sol_body) <= 1 "each problem must have no more than one @solution"
+    sol_body = isempty(sol_body) ? "" : macro_body(sol_body[], :solution)
     sol_vars = Symbol[]
     sol_body = process_body!(mod, sol_vars, sol_body)
     problemdef[:sol_body] = sol_body
+    allunique(sol_vars) || @warn("duplicate variables at the left-hand "
+                                 *"side of the tilde operator in @solution")
     problemdef[:sol_vars] = unique(sol_vars)
     #
     body_args = map(x->is_macro(x, :solution) ? :(:solution) : x, body_args)
     cond_body = Expr(body.head, body_args...)
     cond_vars = Symbol[]
     cond_body = process_body!(mod, cond_vars, cond_body)
+    allunique(cond_vars) || @warn("duplicate variables at the left-hand "
+                                 *"side of the tilde operator in @problem")
     problemdef[:cond_vars] = unique(cond_vars)
     problemdef[:cond_body] = cond_body
 
@@ -109,10 +113,16 @@ function build_output(problemdef, linenumbernode)
     idx_solution = findfirst(x-> x == :(:solution), cond_args)
     # in place of @solution macro, insert into the problem's condition
     # call to the solution function
-    sol_expr = Expr(Symbol("="),  Expr(:tuple, problemdef[:sol_vars]...),
-                    Expr(:call, problemdef[:name], problemdef[:cond_vars]...))
-    cond_args[idx_solution] =  sol_expr
-    cond_body.args = [linenumbernode; cond_body.args; return_expr]
+    if isempty(problemdef[:sol_vars])
+        sol_expr = Expr(:call, problemdef[:name], problemdef[:cond_vars]...)
+    else
+        sol_expr = Expr(Symbol("="),  Expr(:tuple, problemdef[:sol_vars]...),
+                        Expr(:call, problemdef[:name], problemdef[:cond_vars]...))
+    end
+    if !isnothing(idx_solution)
+        cond_args[idx_solution] = sol_expr
+        cond_body.args = [linenumbernode; cond_body.args; return_expr]
+    end
     problemdef[:body] = cond_body
     ex_cond_function = MacroTools.combinedef(problemdef)
     #
@@ -181,7 +191,7 @@ function macro_body(expr, name, n_args=1)
     is_macro(expr, name) || return nothing
     args = filter(e -> !(e isa LineNumberNode), expr.args)
     if length(args) != n_args+1
-        throw(ArgumentError("number of arguments of macro @$(string(name))"*
+        throw(ArgumentError("number of arguments of macro @$(string(name)) "*
             "must be equal to $n_args"))
     end
     args[end]
