@@ -52,7 +52,7 @@ Generate the latex source of the problems and solutions.
 
 # Arguments
 
-- `names::AbstractVector{String}`: Students' names
+- `student_names::AbstractVector{String}`: Students' names
 - `problems::AbstractVector{Function}`: Vector of functions defined using @problem macro
 - `subsets::Union{Pair,Vector{<:Pair}}`: Subset specification or vector of specifications
 - `rng_seed::Integer`: Random number generator's seed to make generated sets repeatable
