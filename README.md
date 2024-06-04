@@ -1,6 +1,6 @@
-# MakeProblemSet
+# ProblemSet
 
-[![Build Status](https://github.com/kagalenko-m-b/MakeProblemSet.jl/workflows/CI/badge.svg)](https://github.com/kagalenko-m-b/MakeProblemSet.jl/actions)
+[![Build Status](https://github.com/kagalenko-m-b/ProblemSet.jl/workflows/CI/badge.svg)](https://github.com/kagalenko-m-b/ProblemSet.jl/actions)
 
 The goal of this project is to facilitate the creation of problem assignments
 for a group of students. A problem set consists of several problem templates with
@@ -61,7 +61,7 @@ end
 end
 end
 ```
-After exection of this macro, there's a vector in workspace named `my_set` 
+After execution of this macro, there's a vector in workspace named `my_set` 
 that contains three functions `my_set_pool()`, `my_set_addition()` and
 `my_set_subtraction()`. Text-generating function makes use of their
 [methods](Generated_methods.md). This is how an assignment may be produced:

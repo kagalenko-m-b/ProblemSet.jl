@@ -1,4 +1,4 @@
-module MakeProblemSet
+module ProblemSet
 
 using MacroTools
 using Random
@@ -28,8 +28,8 @@ function select_problems(
     for s in subsets
         N,range = s
         if maximum(range) > Nmax
-            error("subset specification $(s) has greater range than the number"
-                  *"of available problems: $Nmax")
+            throw(ArgumentError("subset specification $(s) has greater range "
+                                *"than the number of available problems: $Nmax"))
         end
         idx_r = randperm(length(range))
         append!(idx, range[idx_r[1:N]])

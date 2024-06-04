@@ -1,4 +1,4 @@
-using MakeProblemSet
+using ProblemSet
 using Test
 
 function cleanup_string(str::AbstractString)
@@ -116,8 +116,8 @@ end
 end
 
 @testset "Problem selection" begin
-    @test_throws ErrorException  MakeProblemSet.select_problems(5,[1=>1:7])
-    idx = MakeProblemSet.select_problems(15,[1=>1:5, 2=>6:10, 3=>11:15])
+    @test_throws ArgumentError  ProblemSet.select_problems(5,[1=>1:7])
+    idx = ProblemSet.select_problems(15,[1=>1:5, 2=>6:10, 3=>11:15])
     @test count(1 .<= idx .<= 5) == 1
     @test count(6 .<= idx .<= 10) == 2
     @test count(11 .<= idx .<= 15) == 3
