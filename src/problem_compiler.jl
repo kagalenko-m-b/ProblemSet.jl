@@ -17,7 +17,7 @@ macro problemset(set_name, set_body)
     end
     quote
         $(esc(set_body))
-        $(esc(set_name)) = [$([:($(esc(prob))) for prob in prob_names]...)]
+        $(esc(set_name)) = $(esc(:Function))[$([:($(esc(prob))) for prob in prob_names]...)]
     end
 end
 

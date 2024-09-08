@@ -110,9 +110,10 @@ end
     pr_set = macroexpand( @__MODULE__, problem_set, recursive=:false);
     Base.remove_linenums!(pr_set)
     @test length(pr_set.args) == 2
-    @test pr_set.args[2] == :(test_problem_set = [test_problem_set_sub_add,
-                                                  test_problem_set_sub,
-                                                  test_problem_set_add])
+    @test pr_set.args[2] == :(test_problem_set = Function[
+        test_problem_set_sub_add,
+        test_problem_set_sub,
+        test_problem_set_add])
 end
 
 @testset "Problem selection" begin
