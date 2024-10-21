@@ -7,7 +7,7 @@ export @problem, @problemset, TokenText, problemset_latex, latex_preamble
 
 struct TokenText
     strings::Vector{<:AbstractString}
-    tokens::Vector{Expr}
+    tokens::Vector{Function}
     function TokenText(strings, tokens)
         @assert(length(strings) == length(tokens) + 1, "tokens must intersperse substrings")
         new(strings, tokens)
@@ -136,7 +136,7 @@ function build_text(kind::Symbol, pr::Function, var_data::Tuple)
     N = length(txt_tok.strings)
     str_out = txt_tok.strings[1]
     for n in 2:N
-        str_out *= string(eval(txt_tok.tokens[n - 1]))
+        str_out *= string(txt_tok.tokens[n - 1](var_data))
         str_out *= txt_tok.strings[n]
     end
 

@@ -144,7 +144,7 @@ function build_output(problemdef, linenumbernode)
     #
     problemdef[:args] = [:(::Val{:text})]
     if :cond_text in keys(problemdef)
-         problemdef[:body] = tokenize_text(problemdef[:cond_text], problemdef[:cond_vars])
+        problemdef[:body] = tokenize_text(problemdef[:cond_text], all_names)
     else
         problemdef[:body] = nothing
     end
@@ -152,7 +152,7 @@ function build_output(problemdef, linenumbernode)
     #
     problemdef[:args] = [:(::Val{:solution_text})]
     if :sol_text in keys(problemdef)
-        problemdef[:body] = tokenize_text(problemdef[:sol_text], problemdef[:cond_vars])
+        problemdef[:body] = tokenize_text(problemdef[:sol_text], all_names)
     else
         problemdef[:body] = nothing
     end
@@ -204,22 +204,24 @@ skiplinenums(exprs) = filter(e -> !(e isa LineNumberNode), exprs)
 """
 function tokenize_text(str::AbstractString, vars::AbstractVector{Symbol})
     rgx = r"%(?<var>\w+)(?<idx>\[[^\]]+\])?%"
-    tokens = Expr[]
+    funcdef = Dict(:args=>Any[:data], :body=>:(data), :kwargs=>Any[])
+    tokens = Function[]
     for vm in eachmatch(rgx, str)
         var_idx = findfirst(x->Symbol(vm[:var]) === x, vars)
         if isnothing(var_idx)
-            @warn("text variable $(vm[:var]) is not in problem variables")
+            error("text variable $(vm[:var]) is not in problem variables")
         else
-            var_str = "var_data[$var_idx]"
+            var_str = "data[$var_idx]"
             var_str *= isnothing(vm[:idx]) ? "" : vm[:idx]
             var_ex = Meta.parse(var_str)
-            push!(tokens, var_ex)
+            funcdef[:body] = var_ex
+            push!(tokens, eval(combinedef(funcdef)))
         end
     end
     strs = collect(eachsplit(str,rgx))
-    tt = P.TokenText(strs, tokens)
+    tt = TokenText(strs, tokens)
 
     return tt
 end
-
-# tokenize_text(::Nothing, vars) = nothing
+tokenize_text(ex::Expr, vars::AbstractVector{Symbol}) = tokenize_text(eval(ex), vars)
+tokenize_text(::Nothing, vars) = nothing
