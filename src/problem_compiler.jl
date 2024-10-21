@@ -33,10 +33,9 @@ end
 
 function problem(mod, linenumbernode, name, body)
     problemdef = process_body(mod, name, body)
-    vars = [problemdef[:cond_vars]; problemdef[:sol_vars]]
-    check_text_variables(string(problemdef[:cond_text]), vars)
-    check_text_variables(string(problemdef[:sol_text]), vars)
-    return build_output(problemdef, linenumbernode)
+    problem_out = build_output(problemdef, linenumbernode)
+
+    return problem_out
 end
 
 """
@@ -48,12 +47,12 @@ function process_body(mod, name, body)
     problemdef = Dict{Symbol,Any}(:name=>name,:kwargs=>[],:args=>[])
     cond_text = filter(x->is_macro(x, :text), body.args)
     @assert length(cond_text) <= 1 "more than one @text in problem"
-    problemdef[:cond_text] = isempty(cond_text) ? "" : macro_body(cond_text[], :text)
+    problemdef[:cond_text] = isempty(cond_text) ? nothing : macro_body(cond_text[], :text)
     body_args = filter(x->!is_macro(x, :text), body.args)
     #
     sol_text = filter(x->is_macro(x, :text_solution), body_args)
     @assert length(sol_text) <= 1 "more than one @solution_text in problem"
-    problemdef[:sol_text] = isempty(sol_text) ? "" : macro_body(sol_text[], :text_solution)
+    problemdef[:sol_text] = isempty(sol_text) ? nothing : macro_body(sol_text[], :text_solution)
     filter!(x->!is_macro(x, :text_solution), body_args)
     #
     sol_body = filter(x->is_macro(x, :solution), body_args)
@@ -145,17 +144,17 @@ function build_output(problemdef, linenumbernode)
     #
     problemdef[:args] = [:(::Val{:text})]
     if :cond_text in keys(problemdef)
-         problemdef[:body] = problemdef[:cond_text]
+         problemdef[:body] = tokenize_text(problemdef[:cond_text], problemdef[:cond_vars])
     else
-        problemdef[:body] = ""
+        problemdef[:body] = nothing
     end
     ex_text_function = MacroTools.combinedef(problemdef)
     #
     problemdef[:args] = [:(::Val{:solution_text})]
     if :sol_text in keys(problemdef)
-        problemdef[:body] = problemdef[:sol_text]
+        problemdef[:body] = tokenize_text(problemdef[:sol_text], problemdef[:cond_vars])
     else
-        problemdef[:body] = ""
+        problemdef[:body] = nothing
     end
     ex_solution_text_function = MacroTools.combinedef(problemdef)
     #
@@ -199,21 +198,28 @@ end
 
 skiplinenums(exprs) = filter(e -> !(e isa LineNumberNode), exprs)
 
-function warn_empty(body)
-    if all(l -> isa(l, LineNumberNode), body.args)
-        @warn("Problem definition seems empty, still continue.")
-    end
-    return nothing
-end
+"""
+    substrings,tokens = tokenize_text(str, vars)
 
-function check_text_variables(str::AbstractString, vars::AbstractVector{Symbol})
-    ms = eachmatch(r"%(\w+)%", str)
-    vars_text = [Symbol(m.captures[1]) for m in ms]
-    for k in 1:length(vars_text)
-        v = vars_text[k]
-        idx = findfirst(x->x===v, vars)
-        if isnothing(idx)
-            @warn("text variable $(v) is not in problem variables")
+"""
+function tokenize_text(str::AbstractString, vars::AbstractVector{Symbol})
+    rgx = r"%(?<var>\w+)(?<idx>\[[^\]]+\])?%"
+    tokens = Expr[]
+    for vm in eachmatch(rgx, str)
+        var_idx = findfirst(x->Symbol(vm[:var]) === x, vars)
+        if isnothing(var_idx)
+            @warn("text variable $(vm[:var]) is not in problem variables")
+        else
+            var_str = "var_data[$var_idx]"
+            var_str *= isnothing(vm[:idx]) ? "" : vm[:idx]
+            var_ex = Meta.parse(var_str)
+            push!(tokens, var_ex)
         end
     end
+    strs = collect(eachsplit(str,rgx))
+    tt = P.TokenText(strs, tokens)
+
+    return tt
 end
+
+# tokenize_text(::Nothing, vars) = nothing

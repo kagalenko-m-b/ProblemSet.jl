@@ -61,6 +61,13 @@ problem_4 = :(@problem dupl begin
                   @solution begin z ~ 1; end
               end)
 
+problem_5 = :(@problem pr_index begin
+                  x ~ ["aa", "bb", "cc"]
+                  @solution begin z ~ ["dd", "ee", 66]; end
+                  @text raw"""input array: [%x[1]%, %x[2]%, %x[3]%]"""
+                  @text_solution raw"""output array: [%z[1]%, %z[2]%, %z[3]%]"""
+              end)
+
 problem_set = :(@problemset test_problem_set begin
                     $problem_1
                     $problem_2

@@ -3,8 +3,16 @@ module ProblemSet
 using MacroTools
 using Random
 
-export @problem, @problemset, problemset_latex, latex_preamble,latex_preamble_ru
+export @problem, @problemset, TokenText, problemset_latex, latex_preamble
 
+struct TokenText
+    strings::Vector{<:AbstractString}
+    tokens::Vector{Expr}
+    function TokenText(strings, tokens)
+        @assert(length(strings) == length(tokens) + 1, "tokens must intersperse substrings")
+        new(strings, tokens)
+    end
+end
 include("problem_compiler.jl")
 
 latex_preamble = """
@@ -22,7 +30,7 @@ latex_preamble = """
 \\setsansfont{Liberation Sans}\n\n"""
 
 function select_problems(
-    Nmax::Integer, subsets::Vector{<:Pair{<:Integer,<:AbstractRange{<:Integer}}}
+    Nmax::Integer, subsets::Vector{<:Pair{<:Integer,<:AbstractVector{<:Integer}}}
     )
     idx = Int[]
     for s in subsets
@@ -40,7 +48,7 @@ function select_problems(
 end
 
 function select_problems(
-    Nmax::Integer, subset::Pair{<:Integer,<:AbstractRange{<:Integer}}
+    Nmax::Integer, subset::Pair{<:Integer,<:AbstractVector{<:Integer}}
     )
     return select_problems(Nmax, [subset])
 end
@@ -73,10 +81,11 @@ julia> write("solutions.tex", latex_preamble*txt);
 """
 function problemset_latex(
     student_names::AbstractVector{<:AbstractString},
-    problems::AbstractVector{Function},
-    subsets::Union{Pair,Vector{<:Pair}},
+    problems::AbstractVector{<:Function},
+    subsets::Union{Pair,AbstractVector{<:Pair}},
     rng_seed::Integer;
-    set_title::String=""
+    set_title::String="",
+    problem_title="Problem"
     )
     N = length(student_names)
     M = length(problems)
@@ -95,8 +104,8 @@ function problemset_latex(
             data = pr()
             condition = build_text(:text, pr, data)
             solution =  build_text(:solution_text, pr, data)
-            txt *= "\\underline{Задача $(p):}\n\n$(condition)\n\n"
-            txt_sol *= "\\underline{Задача $(p):}\n\n$(solution)\n\n"
+            txt *= "\\underline{$(problem_title) $(p):}\n\n$(condition)\n\n"
+            txt_sol *= "\\underline{$(problem_title) $(p):}\n\n$(solution)\n\n"
         end
         txt *= "\\newpage\n"
         txt_sol *= "\\newpage\n"
@@ -107,31 +116,31 @@ function problemset_latex(
 end
 function problemset_latex(
     number_variants::Integer,
-    problems::AbstractVector{Function},
-    subsets::Union{Pair,Vector{<:Pair}},
-    rng_seed::Integer
+    problems::AbstractVector{<:Function},
+    subsets::Union{Pair,AbstractVector{<:Pair}},
+    rng_seed::Integer;
+    set_title::String="",
+    problem_title="Problem"
     )
     nms = ["$(k)" for k in 1:number_variants]
-    problemset_latex(nms, problems, subsets,  rng_seed)
+    problemset_latex(nms, problems, subsets,  rng_seed; set_title, problem_title)
 end
 
-function build_text(kind::Symbol, pr::Function, data::Tuple)
-    vars = pr(Val(:vars))
-    str = pr(Val(kind))
-    ms = eachmatch(r"%(\w+)%", str)
-    vars_text = [Symbol(m.captures[1]) for m in ms]
-    for k in 1:length(vars_text)
-        v = vars_text[k]
-        idx = findfirst(x->x===v, vars)
-        if isnothing(idx)
-            error("text variable $(v) is not in problem $(pr) variables")
-        end
-        str = replace(str, Regex("%$(string(v))%")=>"$(data[idx])")
+function build_text(kind::Symbol, pr::Function, var_data::Tuple)
+    txt_tok = pr(Val(kind))
+    if isnothing(txt_tok) || length(txt_tok.strings) == 0
+        return ""
     end
-    str = replace(str, '\n'=>' ')
-    str = replace(str, r" +"=>s" ")
-    str = strip(str)
-    return str
+    # Number of substrings within the tokenized text must be larger by one
+    # than the number of token expressions.
+    N = length(txt_tok.strings)
+    str_out = txt_tok.strings[1]
+    for n in 2:N
+        str_out *= string(eval(txt_tok.tokens[n - 1]))
+        str_out *= txt_tok.strings[n]
+    end
+
+    return str_out
 end
 
 end
