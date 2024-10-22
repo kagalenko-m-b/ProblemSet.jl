@@ -10,6 +10,10 @@ function cleanup_string(str::AbstractString)
     return str
 end
 
+cond_1 = [raw"Find the difference \(c= a - b\) and sum  \(d= a + b\) of two values: \(a = ",
+        raw"\) and \(b = ", raw"\)"]
+sol_1 = [raw"Difference is equal to  \(c = ", raw"\), sum is equal to  \(c = ", raw"\)"]
+
 problem_1 = :(@problem sub_add begin
                   z ~ rand(7:9)
                   w ~ rand(1:5)
@@ -17,27 +21,21 @@ problem_1 = :(@problem sub_add begin
                       zw_sub ~ z - w
                       zw_add ~ z + w
                   end
-                  @text raw"""
-Find the difference \(c = a - b\) and sum  \(d = a + b\)
-of two values: \(a = %z%\) and \(b = %w%\)
-               """
-                  @text_solution raw"""
-Difference is equal to  \(c = %zw_sub%\), sum is equal to  \(c = %zw_add%\)
-                                  """
+                  @text $(cond_1[1])*"%z%"*$(cond_1[2])*"%w%"*$(cond_1[3])
+                  @text_solution $(sol_1[1])*"%zw_sub%"*$(sol_1[2])*"%zw_add%"*$(sol_1[3])
               end)
 
+cond_2 = [raw"Find the difference \(c = a - b\) of two values: \(a = ",
+         raw"\) and \(b = ", raw"\)"]
+sol_2 = [raw"Difference is equal to  \(c = ", raw"\)"]
 problem_2 = :(@problem sub begin
                   z ~ rand(7:9)
                   w ~ rand(1:5)
                   @solution begin
                       zw_sub ~ z - w
                   end
-                  @text raw"""
-Find the difference \(c = a - b\) of two values: \(a = %zz%\) and \(b = %w%\)
-                             """
-                  @text_solution raw"""
-             Difference is equal to  \(c = %zw_sub%\)
-               """
+                  @text $(cond_2[1])*"%zz%"*$(cond_2[2])*"%w%"*$(cond_2[3])
+                  @text_solution $(sol_2[1])*"%zw_sub%"*$(sol_2[2])
               end)
 
 problem_3 = :(@problem add begin
@@ -101,12 +99,8 @@ problem_set = :(@problemset test_problem_set begin
     #
     @test sub_add(Val(:vars)) == [:z, :w, :zw_sub, :zw_add]
     #
-    @test cleanup_string(sub_add(Val(:text))) == (
-        "Find the difference \\(c = a - b\\) and sum \\(d = a + b\\) "
-        * "of two values: \\(a = %z%\\) and \\(b = %w%\\)")
-    @test cleanup_string(sub_add(Val(:solution_text))) == (
-        "Find the difference \\(c = a - b\\) and sum \\(d = a + b\\) of two values: "
-        * "\\(a = %z%\\) and \\(b = %w%\\)")
+    @test  sub_add(Val(:text)).strings == cond_1
+    @test sub_add(Val(:solution_text)).strings == sol_1
     #
     @test_logs (:warn, r" zz | zww_add ") macroexpand( @__MODULE__, problem_2)
     @test_logs (:warn, r" zww_add ") macroexpand( @__MODULE__, problem_3);

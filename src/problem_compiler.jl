@@ -209,14 +209,15 @@ function tokenize_text(str::AbstractString, vars::AbstractVector{Symbol})
     for vm in eachmatch(rgx, str)
         var_idx = findfirst(x->Symbol(vm[:var]) === x, vars)
         if isnothing(var_idx)
-            error("text variable $(vm[:var]) is not in problem variables")
+            @warn("text variable $(vm[:var]) is not in problem variables")
+            funcdef[:body] = :nothing
         else
             var_str = "data[$var_idx]"
             var_str *= isnothing(vm[:idx]) ? "" : vm[:idx]
             var_ex = Meta.parse(var_str)
             funcdef[:body] = var_ex
-            push!(tokens, eval(combinedef(funcdef)))
         end
+        push!(tokens, eval(combinedef(funcdef)))
     end
     strs = collect(eachsplit(str,rgx))
     tt = TokenText(strs, tokens)

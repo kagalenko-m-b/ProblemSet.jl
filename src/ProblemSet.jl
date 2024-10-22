@@ -136,11 +136,26 @@ function build_text(kind::Symbol, pr::Function, var_data::Tuple)
     N = length(txt_tok.strings)
     str_out = txt_tok.strings[1]
     for n in 2:N
-        str_out *= string(txt_tok.tokens[n - 1](var_data))
+        str_out *= to_string(txt_tok.tokens[n - 1](var_data))
         str_out *= txt_tok.strings[n]
     end
 
     return str_out
+end
+
+to_string(x) = string(x)
+to_string(::Nothing) = "nothing"
+function to_string(z::Complex)
+    x,y = reim(z)
+    if x == 0
+        s = "i*$(y)"
+    elseif y == 0
+        s = "$(x)"
+    else
+        s = "$(x) + i*$(y)"
+    end
+
+    return s
 end
 
 end
