@@ -64,6 +64,8 @@ Generate the latex source of the problems and solutions.
 - `problems::AbstractVector{Function}`: Vector of functions defined using @problem macro
 - `subsets::Union{Pair,Vector{<:Pair}}`: Subset specification or vector of specifications
 - `rng_seed::Integer`: Random number generator's seed to make generated sets repeatable
+- `set_title::String`: Title of the problem set
+- `problem_title::String`: Constant part of the title of individual problems
 
 Subset specifications instructs the function how to pick problems to be assigned to a
 student from the supplied vector. For example, the specification [1=>1:3, 2=>4:7]
@@ -148,11 +150,11 @@ to_string(::Nothing) = "nothing"
 function to_string(z::Complex)
     x,y = reim(z)
     if x == 0
-        s = "i*$(y)"
+        s = y==0 ? "0" : "$(y)i"
     elseif y == 0
         s = "$(x)"
     else
-        s = "$(x) + i*$(y)"
+        s = y > 0 ? "$(x) + $(y)i" : "$(x) - $(-y)i"
     end
 
     return s
