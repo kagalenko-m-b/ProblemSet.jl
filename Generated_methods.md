@@ -27,26 +27,24 @@ function sub_add()
     w = rand(1:5)
     zw_sub,zw_add = sub_add(z, w)
 
-    return z,w,zw_sub,zw_add
+    return (;z,w,zw_sub,zw_add)
 end
 
 function sub_add(z, w)
     zw_sub = z - w
     zw_add = z + w
-    return zw_sub,zw_add
+    return (;zw_sub,zw_add)
 end
-
-sub_add(::Val{:vars}) = [:z, :w, :zw_sub, :zw_add]
 
 sub_add(::Val{:text}) = TokenText(
       ["Find the difference \\(c = a - b\\) and sum  \\(d = a + b\\) of two values: \\(a = ",
        "\\) and \\(b = ", "\\)"],
-      [x->x[1], x->x[2]]
+      [x->x.a, x->x.b]
     )
 
 sub_add(::Val{:solution_text}) = TokenText(
       [" Difference is equal to  \\(c = ", "\\), sum is equal to  \\(c = ", "\\)"],
-      [x-x[3], x->x[4]]
+      [x->x.zw_sub, x->x.zw_add]
     )
 
 ```

@@ -128,7 +128,7 @@ function problemset_latex(
     problemset_latex(nms, problems, subsets,  rng_seed; set_title, problem_title)
 end
 
-function build_text(kind::Symbol, pr::Function, var_data::Tuple)
+function build_text(kind::Symbol, pr::Function, var_data::NamedTuple)
     txt_tok = pr(Val(kind))
     if isnothing(txt_tok) || length(txt_tok.strings) == 0
         return ""
