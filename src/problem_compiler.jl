@@ -104,8 +104,8 @@ function process_body!(mod::Module, vars::Vector{Symbol}, expr::Expr)
 end
 
 function build_output(problemdef, linenumbernode)
-    return_vars = Expr(:tuple, problemdef[:cond_vars]..., problemdef[:sol_vars]...)
-    return_expr = Expr(:return, return_vars)
+    all_vars = [problemdef[:cond_vars]; problemdef[:sol_vars]]
+    return_expr = :(return (;$(all_vars...)))
     #
     cond_body = problemdef[:cond_body]
     cond_args = cond_body.args
@@ -125,15 +125,9 @@ function build_output(problemdef, linenumbernode)
     problemdef[:body] = cond_body
     ex_cond_function = MacroTools.combinedef(problemdef)
     #
-    problemdef[:args] = [:(::Val{:vars})]
-    all_names = [problemdef[:cond_vars];problemdef[:sol_vars]]
-    #all_names = map(s->Symbol(string(problemdef[:name])*'_'*string(s)), all_names)
-    problemdef[:body] = all_names
-    ex_vars_function = MacroTools.combinedef(problemdef)
-    #
     problemdef[:args] = problemdef[:cond_vars]
     sol_body =  problemdef[:sol_body]
-    return_expr = Expr(:return, Expr(:tuple, problemdef[:sol_vars]...))
+    return_expr = :(return (;$(problemdef[:sol_vars]...)))
     sol_body = quote
         $linenumbernode
         $sol_body
@@ -144,7 +138,7 @@ function build_output(problemdef, linenumbernode)
     #
     problemdef[:args] = [:(::Val{:text})]
     if :cond_text in keys(problemdef)
-        problemdef[:body] = tokenize_text(problemdef[:cond_text], all_names)
+        problemdef[:body] = tokenize_text(problemdef[:cond_text], all_vars)
     else
         problemdef[:body] = nothing
     end
@@ -152,7 +146,7 @@ function build_output(problemdef, linenumbernode)
     #
     problemdef[:args] = [:(::Val{:solution_text})]
     if :sol_text in keys(problemdef)
-        problemdef[:body] = tokenize_text(problemdef[:sol_text], all_names)
+        problemdef[:body] = tokenize_text(problemdef[:sol_text], all_vars)
     else
         problemdef[:body] = nothing
     end
@@ -160,7 +154,6 @@ function build_output(problemdef, linenumbernode)
     #
     return quote
         $ex_cond_function
-        $ex_vars_function
         $ex_sol_function
         $ex_text_function
         $ex_solution_text_function
@@ -207,12 +200,11 @@ function tokenize_text(str::AbstractString, vars::AbstractVector{Symbol})
     funcdef = Dict(:args=>Any[:data], :body=>:(data), :kwargs=>Any[])
     tokens = Function[]
     for vm in eachmatch(rgx, str)
-        var_idx = findfirst(x->Symbol(vm[:var]) === x, vars)
-        if isnothing(var_idx)
+        if !in(Symbol(vm[:var]), vars)
             @warn("text variable $(vm[:var]) is not in problem variables")
             funcdef[:body] = :nothing
         else
-            var_str = "data[$var_idx]"
+            var_str = "data.$(vm[:var])"
             var_str *= isnothing(vm[:idx]) ? "" : vm[:idx]
             var_ex = Meta.parse(var_str)
             funcdef[:body] = var_ex

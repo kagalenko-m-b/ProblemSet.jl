@@ -76,28 +76,28 @@ problem_set = :(@problemset test_problem_set begin
     pr = macroexpand( @__MODULE__, problem_1);
     eval(pr)
     Base.remove_linenums!(pr)
-    @test length(pr.args) == 5
+    @test length(pr.args) == 4
     @test pr.args[1] == Base.remove_linenums!(:(function sub_add(; )
                                                     z = rand(7:9)
                                                     w = rand(1:5)
                                                     (zw_sub, zw_add) = sub_add(z, w)
-                                                    return (z, w, zw_sub, zw_add)
+                                                    return (;z, w, zw_sub, zw_add)
                                                 end)
                                               )
 
-    @test pr.args[3] ==  Base.remove_linenums!(:(function sub_add(z, w; )
+    @test pr.args[2] ==  Base.remove_linenums!(:(function sub_add(z, w; )
                                                      begin
                                                          zw_sub = z - w
                                                          zw_add = z + w
                                                      end
-                                                     return (zw_sub, zw_add)
+                                                     return (;zw_sub, zw_add)
                                                  end)
                                                )
     #
     data_1 = sub_add()
-    @test all(sub_add(data_1[1:2]...) .== data_1[3:end])
+    @test all([data_1[:z] - data_1[:w], data_1[:z] + data_1[:w]] .== [data_1[:zw_sub],data_1[:zw_add]])
     #
-    @test sub_add(Val(:vars)) == [:z, :w, :zw_sub, :zw_add]
+    @test sort(collect(keys(data_1))) == sort([:z, :w, :zw_sub, :zw_add])
     #
     @test  sub_add(Val(:text)).strings == cond_1
     @test sub_add(Val(:solution_text)).strings == sol_1
