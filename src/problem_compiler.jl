@@ -218,3 +218,29 @@ function tokenize_text(str::AbstractString, vars::AbstractVector{Symbol})
 end
 tokenize_text(ex::Expr, vars::AbstractVector{Symbol}) = tokenize_text(eval(ex), vars)
 tokenize_text(::Nothing, vars) = nothing
+
+"""
+    questionset(set_name, set_body)
+
+Specify a set of questions.
+"""
+macro questionset(qset_name, qset_body)
+    @assert isa(qset_body, AbstractString) "Syntax error: Expecting a string!"
+    q_vec = question_set_body(qset_body)
+    q_set = :(@problemset $qset_name begin $(q_vec...) end)
+    eval(q_set)
+end
+
+function question_set_body(qset_body::AbstractString)
+    questions = collect(eachsplit(qset_body))
+    N = length(questions)
+    q_set = Vector{Expr}(undef, N)
+    for n in 1:N
+        ex_n = Expr(:block, Expr(:macrocall, Symbol("@text"), questions[n]))
+        ln_n = LineNumberNode(n)
+        q_set[n] = Expr(:macrocall, Symbol("@problem"), ln_n, Symbol("$n"), ex_n)
+        println(q_set[n])
+    end
+
+    return q_set
+end
