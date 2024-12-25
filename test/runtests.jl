@@ -111,10 +111,23 @@ end
     pr_set = macroexpand( @__MODULE__, problem_set, recursive=:false);
     Base.remove_linenums!(pr_set)
     @test length(pr_set.args) == 2
+    @test pr_set.args[1].head == :block
+    @test length(pr_set.args[1].args) == 3
     @test pr_set.args[2] == :(test_problem_set = Function[
         test_problem_set_sub_add,
         test_problem_set_sub,
         test_problem_set_add])
+end
+
+@testset "Question set" begin
+    question_set = :(@problemset test_question_set "question 1\nquestion 2\nquestion 3")
+    qst_set = macroexpand( @__MODULE__, question_set, recursive=:false)
+    Base.remove_linenums!(qst_set)
+    @test length(qst_set.args) == 2
+    @test qst_set.args[1].head == :block
+    @test length(qst_set.args[1].args) == 3
+    @test qst_set.args[2] == :(test_question_set =
+        Function[test_question_set_1, test_question_set_2, test_question_set_3])
 end
 
 @testset "Problem selection" begin

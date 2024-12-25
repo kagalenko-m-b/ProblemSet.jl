@@ -5,6 +5,12 @@
 Macro to specify a set of problems.
 """
 macro problemset(set_name, set_body)
+    pset = problemset(__module__, __source__, set_name, set_body)
+
+    return pset
+end
+
+function problemset(__module__, __source__, set_name::Symbol, set_body::Expr)
     @assert set_body.head == :block "Syntax error: Expecting block of definitions!"
     prob_names = []
     for prob in skiplinenums(set_body.args)
@@ -15,10 +21,18 @@ macro problemset(set_name, set_body)
     if !allunique(prob_names)
         error("problem names must be unique within the set")
     end
-    quote
+    pset = quote
         $(esc(set_body))
         $(esc(set_name)) = $(esc(:Function))[$([:($(esc(prob))) for prob in prob_names]...)]
     end
+    
+    return pset
+end
+
+function problemset(__module__, __source__, set_name::Symbol, set_body_str::String)
+    set_body = question_set_body(set_body_str)
+
+    return problemset(__module__, __source__, set_name, set_body)
 end
 
 """
@@ -184,7 +198,7 @@ function macro_body(expr, name, n_args=1)
     args = filter(e -> !(e isa LineNumberNode), expr.args)
     if length(args) != n_args+1
         throw(ArgumentError("number of arguments of macro @$(string(name)) "*
-            "must be equal to $n_args"))
+            "must be equal to $n_args, but is $(length(args))"))
     end
     args[end]
 end
@@ -218,3 +232,22 @@ function tokenize_text(str::AbstractString, vars::AbstractVector{Symbol})
 end
 tokenize_text(ex::Expr, vars::AbstractVector{Symbol}) = tokenize_text(eval(ex), vars)
 tokenize_text(::Nothing, vars) = nothing
+
+"""
+    question_set_bosy(set_name, set_body)
+
+Create a vector of problem definitions to form a set of questions.
+"""
+function question_set_body(qset_body::AbstractString)
+    questions = collect(eachsplit(qset_body, r"[\r\n]+"))
+    N = length(questions)
+    q_vec = Vector{Expr}(undef, N)
+    for n in 1:N
+        ln_n = LineNumberNode(n)
+        ex_n = Expr(:block, Expr(:macrocall, Symbol("@text"), ln_n, questions[n]))
+        q_vec[n] = Expr(:macrocall, Symbol("@problem"), nothing, Symbol("$n"), ex_n)
+    end
+    q_body = Expr(:block, q_vec...)
+
+    return q_body
+end

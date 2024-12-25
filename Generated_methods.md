@@ -1,6 +1,6 @@
 ## Methods of the generated functions
 
-Each `@problem` macro generates in the workspace five methods to be used for
+Each `@problem` macro generates in the workspace four methods to be used for
 producing the individual problems. Let's take an example:
 ```julia
 @problem sub_add begin
@@ -19,7 +19,7 @@ producing the individual problems. Let's take an example:
 end
 ```
 
-That macro call is equivalent to manually defining the following five methods:
+That macro call is equivalent to manually defining the following four methods:
 
 ```julia
 function sub_add() 
@@ -50,9 +50,9 @@ sub_add(::Val{:solution_text}) = TokenText(
 ```
 When processing the macros, the left-hand sides of tilde `~` operators are collected
 and then the tildes are replaced by the equality signs `=`. Otherwise the syntax
-within the macro is the usual Julian syntax. The left-hand sides must always
-be a single variable; assignment to a tuple is unsupported. The variable, though,
-may be a matrix or a tuple. Indexing of text variables is supported.
+within the macro is the usual Julian syntax. The left-hand side of a tilde must always
+be a single variable; assignment to a tuple is unsupported. The value assigned
+to that variable may be a matrix or a tuple. Indexing of text variables is supported.
 
 The first method generates (usually randomized) data for the problem's statement.
 
