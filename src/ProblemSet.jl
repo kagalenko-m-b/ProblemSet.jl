@@ -3,7 +3,7 @@ module ProblemSet
 using MacroTools
 using Random
 
-export @problem, @problemset, TokenText, problemset_latex, latex_preamble
+export TokenText, @problem, @problemset, problemset_latex, latex_preamble
 
 struct TokenText
     strings::Vector{<:AbstractString}
@@ -15,8 +15,8 @@ struct TokenText
 end
 include("problem_compiler.jl")
 
-latex_preamble = """
-\\documentclass[a4paper,12pt,notitlepage]{article}
+latex_preamble(;font_size_pt::Integer=12, default_language=:english) = """
+\\documentclass[a4paper,$(font_size_pt)pt,notitlepage]{article}
 \\usepackage{amsmath}
 \\usepackage[left=1.cm,right=1cm,top=1cm,bottom=1cm]{geometry}
 \\pagenumbering{gobble}
@@ -26,7 +26,11 @@ latex_preamble = """
 \\usepackage{float}
 \\usepackage{graphicx}
 \\usepackage{bookmark}
+\\usepackage{tabularx}
+\\usepackage[table]{xcolor}
+\\setdefaultlanguage{$default_language}
 \\setmainfont{Liberation Serif}
+\\setmonofont{Liberation Mono}
 \\setsansfont{Liberation Sans}\n\n"""
 
 function select_problems(

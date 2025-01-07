@@ -1,7 +1,7 @@
 ## Methods of the generated functions
 
 Each `@problem` macro generates in the workspace four methods to be used for
-producing the individual problems. Let's take an example:
+producing the individual problems. Consider an example:
 ```julia
 @problem sub_add begin
     z ~ rand(7:9)
@@ -14,7 +14,7 @@ producing the individual problems. Let's take an example:
     of two values: \(a = %z%\) and \(b = %w%\)
     """
     @text_solution raw"""
-      Difference is equal to  \(c = %zw_sub%\), sum is equal to  \(c = %zw_add%\)
+      Difference is equal to  \(c = %zw_sub%\), sum is equal to  \(d = %zw_add%\)
     """
 end
 ```
@@ -48,13 +48,13 @@ sub_add(::Val{:solution_text}) = TokenText(
     )
 
 ```
-When processing the macros, the left-hand sides of tilde `~` operators are collected
-and then the tildes are replaced by the equality signs `=`. Otherwise the syntax
+Macro collects the left-hand sides of tilde `~` operators
+and replaces the tildes with the equality signs `=`. Otherwise the syntax
 within the macro is the usual Julian syntax. The left-hand side of a tilde must always
 be a single variable; assignment to a tuple is unsupported. The value assigned
 to that variable may be a matrix or a tuple. Indexing of text variables is supported.
 
-The first method generates (usually randomized) data for the problem's statement.
+The first method generates data for the problem's statement.
 
 The second method computes the solution. Arguments for this method are the symbols that 
 appear at the left-hand side of the tilde operator within the `@problem` macro,
