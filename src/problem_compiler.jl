@@ -234,7 +234,7 @@ tokenize_text(ex::Expr, vars::AbstractVector{Symbol}) = tokenize_text(eval(ex), 
 tokenize_text(::Nothing, vars) = nothing
 
 """
-    question_set_bosy(set_name, set_body)
+    question_set_body(set_name, set_body)
 
 Create a vector of problem definitions to form a set of questions.
 """

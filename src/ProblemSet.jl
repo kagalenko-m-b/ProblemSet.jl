@@ -3,7 +3,7 @@ module ProblemSet
 using MacroTools
 using Random
 
-export TokenText, @problem, @problemset, problemset_latex, latex_preamble
+export TokenText, @problem, @problemset, latex_preamble, problemset_latex
 
 struct TokenText
     strings::Vector{<:AbstractString}
@@ -15,23 +15,28 @@ struct TokenText
 end
 include("problem_compiler.jl")
 
-latex_preamble(;font_size_pt::Integer=12, default_language=:english) = """
-\\documentclass[a4paper,$(font_size_pt)pt,notitlepage]{article}
-\\usepackage{amsmath}
-\\usepackage[left=1.cm,right=1cm,top=1cm,bottom=1cm]{geometry}
-\\pagenumbering{gobble}
-\\usepackage{fontspec}
-\\usepackage{polyglossia}
-\\usepackage{csvmerge}
-\\usepackage{float}
-\\usepackage{graphicx}
-\\usepackage{bookmark}
-\\usepackage{tabularx}
-\\usepackage[table]{xcolor}
-\\setdefaultlanguage{$default_language}
-\\setmainfont{Liberation Serif}
-\\setmonofont{Liberation Mono}
-\\setsansfont{Liberation Sans}\n\n"""
+function latex_preamble(
+    ;font_size_pt::Integer=12, default_language=:english, landscape::Bool=false
+    )
+    landscape_str = landscape ? ",landscape" : ""
+    str_out = """
+    \\documentclass[a4paper,$(font_size)pt,notitlepage$landscape_str]{extarticle}
+    \\usepackage{amsmath}
+    \\usepackage[left=1cm,right=1cm,top=1cm,bottom=1cm]{geometry}
+    \\pagenumbering{gobble}
+    \\usepackage{fontspec}
+    \\usepackage{polyglossia}
+    \\usepackage{csvmerge}
+    \\usepackage{float}
+    \\usepackage{graphicx}
+    \\usepackage{bookmark}
+    \\usepackage{tabularx}
+    \\usepackage[table]{xcolor}
+    \\setdefaultlanguage{$default_language}
+    \\setmainfont{Liberation Serif}
+    \\setmonofont{Liberation Mono}
+    \\setsansfont{Liberation Sans}\n\n"""
+end
 
 function select_problems(
     Nmax::Integer, subsets::Vector{<:Pair{<:Integer,<:AbstractVector{<:Integer}}}
@@ -121,14 +126,10 @@ function problemset_latex(
     return txt,txt_sol
 end
 function problemset_latex(
-    number_variants::Integer,
-    problems::AbstractVector{<:Function},
-    subsets::Union{Pair,AbstractVector{<:Pair}},
-    rng_seed::Integer;
-    set_title::String="",
-    problem_title="Problem"
+    number_variants::Integer, problems, subsets, rng_seed;
+    set_title::String="", problem_title="Problem"
     )
-    nms = ["$(k)" for k in 1:number_variants]
+    nms = ["" for k in 1:number_variants]
     problemset_latex(nms, problems, subsets,  rng_seed; set_title, problem_title)
 end
 
