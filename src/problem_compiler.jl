@@ -4,35 +4,47 @@
 
 Macro to specify a set of problems.
 """
-macro problemset(set_name, set_body)
-    pset = problemset(__module__, __source__, set_name, set_body)
+macro problemset(set_name::Symbol, set_body)
+    set_body = problemset(set_name, set_body)
+    pset = quote
+        $(esc(set_body))
+        $(esc(set_name)) = $(esc(:Function))[$([:($(esc(prob)))
+                                                for prob in problem_names(set_body)]...)]
+    end
 
     return pset
 end
 
-function problemset(__module__, __source__, set_name::Symbol, set_body::Expr)
-    @assert set_body.head == :block "Syntax error: Expecting block of definitions!"
-    prob_names = []
+function problemset(set_name::Symbol, set_body::Expr)
+    (set_body.head == :block) || error("Syntax error: Expecting block of definitions!")
+    allunique(problem_names(set_body)) || error("problem names must be unique within the set")
+    rename_problems!(set_name::Symbol, set_body::Expr)
+
+    return set_body
+end
+
+problem_names(set_body::Expr) = [prob.args[3] for prob in skiplinenums(set_body.args)]
+
+function rename_problems!(set_name::Symbol, set_body::Expr)
     for prob in skiplinenums(set_body.args)
         @assert is_macro(prob, :problem) "Only problems allowed in problemset!"
         prob.args[3] = Symbol(string(set_name)*'_'*string(prob.args[3]))
-        push!(prob_names, prob.args[3])
     end
-    if !allunique(prob_names)
-        error("problem names must be unique within the set")
-    end
-    pset = quote
-        $(esc(set_body))
-        $(esc(set_name)) = $(esc(:Function))[$([:($(esc(prob))) for prob in prob_names]...)]
-    end
-    
-    return pset
+    return set_body
 end
 
-function problemset(__module__, __source__, set_name::Symbol, set_body_str::String)
+function problemset(set_name::Symbol, set_body_str::String)
     set_body = question_set_body(set_body_str)
+ 
+    return problemset(set_name, set_body)
+end
 
-    return problemset(__module__, __source__, set_name, set_body)
+macro questions_str(set_body_str::String)
+    problem_names,set_body = problemset(:q, set_body_str)
+    quote
+        $(esc(set_body))
+        $(esc(:Function))[$([:($(esc(prob))) for prob in problem_names]...)]
+    end
 end
 
 """
@@ -234,12 +246,11 @@ tokenize_text(ex::Expr, vars::AbstractVector{Symbol}) = tokenize_text(eval(ex), 
 tokenize_text(::Nothing, vars) = nothing
 
 """
-    question_set_body(set_name, set_body)
+    question_set_body(questions)
 
 Create a vector of problem definitions to form a set of questions.
 """
-function question_set_body(qset_body::AbstractString)
-    questions = collect(eachsplit(qset_body, r"[\r\n]+"))
+function question_set_body(questions::AbstractVector{<:AbstractString})
     N = length(questions)
     q_vec = Vector{Expr}(undef, N)
     for n in 1:N
@@ -250,4 +261,9 @@ function question_set_body(qset_body::AbstractString)
     q_body = Expr(:block, q_vec...)
 
     return q_body
+end
+
+function question_set_body(qset_body::AbstractString)
+    questions = collect(eachsplit(unescape_string(qset_body), r"[\r\n]+"))
+    return question_set_body(questions)
 end
