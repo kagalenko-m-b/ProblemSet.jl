@@ -139,21 +139,21 @@ function problemset_latex(
     M = length(problems)
     txt = "\\begin{document}\n"
     txt_sol = txt
+    problems_active = select_problems(N, M, subsets)
     for n in 1:N
         if !isempty(set_title)
             txt *= "{\\centering\n\\textbf{$set_title}\\\\\n}"
         end
         txt *= "\\section{$(student_names[n])}\n"
         txt_sol *= "\\section{$(student_names[n])}\n"
-        problems_active = select_problems(M, subsets)
-        for p in problems_active
+        for p in problems_active[n, :]
             Random.seed!(rng_seed + n + p)
             pr = problems[p]
             data = pr()
             condition = build_text(:text, pr, data)
             solution =  build_text(:solution_text, pr, data)
-            txt *= "\\underline{$(problem_title) $(p):}\n\n$(condition)\n\n"
-            txt_sol *= "\\underline{$(problem_title) $(p):}\n\n$(solution)\n\n"
+            txt *= "\\underline{$(problem_title) $(p):}\n\n$(condition)\\\\\n"
+            txt_sol *= "\\underline{$(problem_title) $(p):}\n\n$(solution)\\\\n"
         end
         txt *= "\\newpage\n"
         txt_sol *= "\\newpage\n"

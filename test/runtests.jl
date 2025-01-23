@@ -120,14 +120,26 @@ end
 end
 
 @testset "Question set" begin
-    question_set = :(@problemset test_question_set "question 1\nquestion 2\nquestion 3")
+    question_set = :(@problemset question_set "question 1\nquestion 2\nquestion 3")
     qst_set = macroexpand( @__MODULE__, question_set, recursive=:false)
     Base.remove_linenums!(qst_set)
     @test length(qst_set.args) == 2
     @test qst_set.args[1].head == :block
     @test length(qst_set.args[1].args) == 3
-    @test qst_set.args[2] == :(test_question_set =
-        Function[test_question_set_1, test_question_set_2, test_question_set_3])
+    @test qst_set.args[2] == :(question_set =
+        Function[question_set_1, question_set_2, question_set_3])
+    #
+    question_set_str = :(question_set_str = questions"question 1\nquestion 2\nquestion 3")
+    qst_set_str = macroexpand( @__MODULE__, question_set_str, recursive=:false)
+    Base.remove_linenums!(qst_set_str)
+    @test qst_set_str.head == :(=)
+    @test length(qst_set_str.args) == 2
+    @test qst_set_str.args[1] == :question_set_str
+    @test qst_set_str.args[2].head == :block
+    @test length(qst_set_str.args[2].args) == 2
+    @test qst_set_str.args[2].args[1].head == :block
+    @test length(qst_set_str.args[2].args[1].args) == 3
+    @test qst_set_str.args[2].args[2] == :(Function[question_1, question_2, question_3])
 end
 
 @testset "Problem selection" begin

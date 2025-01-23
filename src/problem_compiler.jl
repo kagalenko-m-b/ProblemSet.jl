@@ -40,10 +40,10 @@ function problemset(set_name::Symbol, set_body_str::String)
 end
 
 macro questions_str(set_body_str::String)
-    problem_names,set_body = problemset(:q, set_body_str)
+    set_body = problemset(:question, set_body_str)
     quote
         $(esc(set_body))
-        $(esc(:Function))[$([:($(esc(prob))) for prob in problem_names]...)]
+        $(esc(:Function))[$([:($(esc(prob))) for prob in problem_names(set_body)]...)]
     end
 end
 
