@@ -3,7 +3,7 @@ module ProblemSet
 using MacroTools
 using Random
 
-export TokenText, @problem, @problemset, latex_preamble, problemset_latex
+export TokenText, @problem, @problemset, @questions_str, latex_preamble, problemset_latex
 
 struct TokenText
     strings::Vector{<:AbstractString}
@@ -20,7 +20,7 @@ function latex_preamble(
     )
     landscape_str = landscape ? ",landscape" : ""
     str_out = """
-    \\documentclass[a4paper,$(font_size)pt,notitlepage$landscape_str]{extarticle}
+    \\documentclass[a4paper,$(font_size_pt)pt,notitlepage$landscape_str]{extarticle}
     \\usepackage{amsmath}
     \\usepackage[left=1cm,right=1cm,top=1cm,bottom=1cm]{geometry}
     \\pagenumbering{gobble}
@@ -39,27 +39,64 @@ function latex_preamble(
 end
 
 function select_problems(
-    Nmax::Integer, subsets::Vector{<:Pair{<:Integer,<:AbstractVector{<:Integer}}}
+    num_variants::Integer,
+    set_size::Integer,
+    subsets::Vector{<:Pair{<:Integer,<:AbstractVector{<:Integer}}}
     )
-    idx = Int[]
-    for s in subsets
-        N,range = s
-        if maximum(range) > Nmax
-            throw(ArgumentError("subset specification $(s) has greater range "
-                                *"than the number of available problems: $Nmax"))
-        end
-        idx_r = randperm(length(range))
-        append!(idx, range[idx_r[1:N]])
+    num_subsets = length(subsets)
+    subset_bounds = zeros(Int, 2num_subsets)
+    for n in 1:num_subsets
+        subset_bounds[2(n - 1) + 1:2n] .= extrema(subsets[n][2])
     end
-    sort!(unique!(idx))
-
-    return idx
+    issorted(subset_bounds) ||  @warn "subset bounds overlap"
+    problems_idx = zeros(Int, num_variants, 0)
+    for n in 1:num_subsets
+        problems_idx = hcat(problems_idx,  select_problems(num_variants, set_size, subsets[n]))
+    end
+    
+    return problems_idx
 end
 
 function select_problems(
-    Nmax::Integer, subset::Pair{<:Integer,<:AbstractVector{<:Integer}}
+    num_variants::Integer,
+    set_size::Integer,
+    subset::Pair{<:Integer,<:AbstractVector{<:Integer}}
     )
-    return select_problems(Nmax, [subset])
+    num_problems,range = subset
+    if maximum(range) > set_size
+            throw(ArgumentError("subset specification $(subset) has greater range "
+                                *"than the number of available problems: $set_size"))
+    end
+    range_len = length(range)
+    range_unique_len = length(unique(range))
+    if range_unique_len < num_problems
+        throw(ArgumentError("can't select $num_problems unique problems from "
+                            *" subset specification with $range_unique_len unique problems"))
+    end
+    # use randperm() to minimize the repeated assignments of the same problem
+    n_repeat = div(num_variants*num_problems, range_len, RoundUp) + 1
+    idx = randperm(range_len*n_repeat)
+    # For simplicity, this array implements a queue by means of push!() and popfirst!()
+    range_idx = repeat(range, n_repeat)[idx]
+    problem_idx = -ones(eltype(range), num_variants, num_problems)
+    for k in 1:num_variants
+        problem_idx[k, 1] = popfirst!(range_idx)
+        for n in 2:num_problems
+            while true # number of distinct elements in range is not less than num_problems,
+                       # therefore this lopp terminates
+                el_n = popfirst!(range_idx)
+                if el_n in problem_idx[k, :]
+                    push!(range_idx, el_n)
+                else
+                    problem_idx[k, n] = el_n
+                    break
+                end
+            end
+        end
+        sort!(view(problem_idx, k, :))
+    end
+
+    return problem_idx
 end
 
 """

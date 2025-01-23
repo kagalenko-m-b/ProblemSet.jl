@@ -131,10 +131,10 @@ end
 end
 
 @testset "Problem selection" begin
-    @test_throws ArgumentError  ProblemSet.select_problems(5,[1=>1:7])
-    idx = ProblemSet.select_problems(15,[1=>1:5, 2=>6:10, 3=>11:15])
-    @test count(1 .<= idx .<= 5) == 1
-    @test count(6 .<= idx .<= 10) == 2
-    @test count(11 .<= idx .<= 15) == 3
+    @test_throws ArgumentError  ProblemSet.select_problems(10, 5,[1=>1:7])
+    idx = ProblemSet.select_problems(20,15,[1=>1:5, 2=>6:10, 3=>11:15])
+    @test all([count(1 .<= idx_k .<= 5) == 1 for idx_k in eachrow(idx)])
+    @test all([count(6 .<= idx_k .<= 10) == 2 for idx_k in eachrow(idx)])
+    @test all([count(11 .<= idx_k .<= 15) == 3 for idx_k in eachrow(idx)])
 end
 
