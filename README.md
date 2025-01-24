@@ -2,8 +2,8 @@
 
 [![Build Status](https://github.com/kagalenko-m-b/ProblemSet.jl/workflows/CI/badge.svg)](https://github.com/kagalenko-m-b/ProblemSet.jl/actions)
 
-The goal of this package is to facilitate the creation of problem assignments
-for a group of students. It allows to randomize the assignments in two ways:
+This package facilitates creation of  assignments for a group of students. It allows
+to randomize the assignments in two ways:
 
 * [random selection](Random_selection.md) of problems from a set, and
 

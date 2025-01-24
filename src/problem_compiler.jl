@@ -90,7 +90,8 @@ function process_body(mod, name, body)
     allunique(sol_vars) || @warn("duplicate variables at the left-hand "
                                  *"side of the tilde operator in @solution")
     problemdef[:sol_vars] = unique(sol_vars)
-    #
+    # Solution function should be called at the last line before return,
+    # rather than at the line where the @solution macro is found
     body_args = map(x->is_macro(x, :solution) ? :(:solution) : x, body_args)
     cond_body = Expr(body.head, body_args...)
     cond_vars = Symbol[]
@@ -138,16 +139,17 @@ function build_output(problemdef, linenumbernode)
     idx_solution = findfirst(x-> x == :(:solution), cond_args)
     # in place of @solution macro, insert into the problem's condition
     # call to the solution function
-    if isempty(problemdef[:sol_vars])
-        sol_expr = Expr(:call, problemdef[:name], problemdef[:cond_vars]...)
+    if isnothing(idx_solution)
+        sol_expr = nothing
     else
-        sol_expr = Expr(Symbol("="),  Expr(:tuple, problemdef[:sol_vars]...),
-                        Expr(:call, problemdef[:name], problemdef[:cond_vars]...))
+        if isempty(problemdef[:sol_vars])
+            sol_expr = Expr(:call, problemdef[:name], problemdef[:cond_vars]...)
+        else
+            sol_expr = Expr(Symbol("="),  Expr(:tuple, problemdef[:sol_vars]...),
+                            Expr(:call, problemdef[:name], problemdef[:cond_vars]...))
+        end
     end
-    if !isnothing(idx_solution)
-        cond_args[idx_solution] = sol_expr
-        cond_body.args = [linenumbernode; cond_body.args; return_expr]
-    end
+    cond_body.args = [linenumbernode; cond_body.args; sol_expr; return_expr]
     problemdef[:body] = cond_body
     ex_cond_function = MacroTools.combinedef(problemdef)
     #
@@ -207,10 +209,10 @@ end
 
 function macro_body(expr, name, n_args=1)
     is_macro(expr, name) || return nothing
-    args = filter(e -> !(e isa LineNumberNode), expr.args)
+    args = filter(e -> !((e isa LineNumberNode) || isnothing(e)), expr.args)
     if length(args) != n_args+1
         throw(ArgumentError("number of arguments of macro @$(string(name)) "*
-            "must be equal to $n_args, but is $(length(args))"))
+            "must be equal to $n_args, but is $(length(args) - 1)"))
     end
     args[end]
 end

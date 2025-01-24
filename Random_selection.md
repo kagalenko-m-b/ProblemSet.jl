@@ -3,7 +3,7 @@
 A simplest set may be created by giving to the `@problemset` macro a list of questions
 as a multiline string:
 ```julia
-question_set = questions"""The first question.
+question_set = questions"The first question.
 The second question.
 ...
 The tenth question."
