@@ -1,6 +1,8 @@
 using ProblemSet
 using Test
 
+include("Aqua.jl")
+
 function cleanup_string(str::AbstractString)
     str = sub_add(Val(:text))
     str = replace(str, '\n'=>' ')

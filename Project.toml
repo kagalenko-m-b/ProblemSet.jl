@@ -1,7 +1,7 @@
 name = "ProblemSet"
 uuid = "806f51fd-16a3-4f55-bd44-f0d72f9cf926"
-authors = ["kagalenko-m-b <16374215+kagalenko-m-b@users.noreply.github.com> and contributors"]
-version = "0.8"
+authors = ["kagalenko-m-b <16374215+kagalenko-m-b@users.noreply.github.com>"]
+version = "0.8.1"
 
 [deps]
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
@@ -11,8 +11,3 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 MacroTools = "0.5"
 julia = "1.9"
 
-[extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test"]
