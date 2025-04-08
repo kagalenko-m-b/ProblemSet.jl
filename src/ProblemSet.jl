@@ -153,7 +153,7 @@ function problemset_latex(
             condition = build_text(:text, pr, data)
             solution =  build_text(:solution_text, pr, data)
             txt *= "\\underline{$(problem_title) $(p):}\n\n$(condition)\\\\\n"
-            txt_sol *= "\\underline{$(problem_title) $(p):}\n\n$(solution)\\\\n"
+            txt_sol *= "\\underline{$(problem_title) $(p):}\n\n$(solution)\\\\\n"
         end
         txt *= "\\newpage\n"
         txt_sol *= "\\newpage\n"
