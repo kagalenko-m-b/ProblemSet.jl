@@ -147,6 +147,8 @@ end
 
 @testset "Problem selection" begin
     @test_throws ArgumentError  ProblemSet.select_problems(10, 5,[1=>1:7])
+    @test_logs (:warn, r"overlap") ProblemSet.select_problems(10, 10,[1=>3:7,1=>[6,9]])
+    @test_nowarn ProblemSet.select_problems(10, 10,[1=>3:7,1=>[1,9]])
     idx = ProblemSet.select_problems(20,15,[1=>1:5, 2=>6:10, 3=>11:15])
     @test all([count(1 .<= idx_k .<= 5) == 1 for idx_k in eachrow(idx)])
     @test all([count(6 .<= idx_k .<= 10) == 2 for idx_k in eachrow(idx)])

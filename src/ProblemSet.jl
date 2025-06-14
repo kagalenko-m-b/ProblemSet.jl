@@ -3,7 +3,11 @@ module ProblemSet
 using MacroTools
 using Random
 
-export TokenText, @problem, @problemset, @questions_str, latex_preamble, problemset_latex
+export TokenText, SubSet, @problem, @problemset, @questions_str, latex_preamble
+export problemset_latex
+
+# const PSet = AbstractVector{<:Function}
+const SubSet = Pair{<:Integer,<:AbstractVector{<:Integer}}
 
 struct TokenText
     strings::Vector{<:AbstractString}
@@ -41,14 +45,12 @@ end
 function select_problems(
     num_variants::Integer,
     set_size::Integer,
-    subsets::Vector{<:Pair{<:Integer,<:AbstractVector{<:Integer}}}
+    subsets::AbstractVector{<:SubSet}
     )
     num_subsets = length(subsets)
-    subset_bounds = zeros(Int, 2num_subsets)
-    for n in 1:num_subsets
-        subset_bounds[2(n - 1) + 1:2n] .= extrema(subsets[n][2])
+    if length(subsets) > 1
+        isempty(intersect((x->x.second).(subsets)...)) ||  @warn "subsets overlap"
     end
-    issorted(subset_bounds) ||  @warn "subset bounds overlap"
     problems_idx = zeros(Int, num_variants, 0)
     for n in 1:num_subsets
         problems_idx = hcat(problems_idx,  select_problems(num_variants, set_size, subsets[n]))
@@ -60,7 +62,7 @@ end
 function select_problems(
     num_variants::Integer,
     set_size::Integer,
-    subset::Pair{<:Integer,<:AbstractVector{<:Integer}}
+    subset::SubSet
     )
     num_problems,range = subset
     if maximum(range) > set_size
@@ -105,13 +107,16 @@ end
 Generate the latex source of the problems and solutions.
 
 # Arguments
-
 - `student_names::AbstractVector{String}`: Students' names
 - `problems::AbstractVector{Function}`: Vector of functions defined using @problem macro
-- `subsets::Union{Pair,Vector{<:Pair}}`: Subset specification or vector of specifications
+- `subsets::Union{SubSet,Vector{<:SubSet}}`: Subset specification or vector of specifications
 - `rng_seed::Integer`: Random number generator's seed to make generated sets repeatable
 - `set_title::String`: Title of the problem set
 - `problem_title::String`: Constant part of the title of individual problems
+
+# Returns
+- `txt::String`: LaTeX source of the problem set
+- `txt_sol::String`: LaTeX source of the soltuion for the problem set
 
 Subset specifications instructs the function how to pick problems to be assigned to a
 student from the supplied vector. For example, the specification [1=>1:3, 2=>4:7]
