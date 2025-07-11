@@ -7,7 +7,7 @@ export TokenText, SubSet, @problem, @problemset, @questions_str, latex_preamble
 export problemset_latex
 
 # const PSet = AbstractVector{<:Function}
-const SubSet = Pair{<:Integer,<:AbstractVector{<:Integer}}
+const SubSet = Pair
 
 struct TokenText
     strings::Vector{<:AbstractString}
