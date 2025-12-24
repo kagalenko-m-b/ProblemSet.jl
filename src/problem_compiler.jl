@@ -137,8 +137,7 @@ function build_output(problemdef, linenumbernode)
     cond_body = problemdef[:cond_body]
     cond_args = cond_body.args
     idx_solution = findfirst(x-> x == :(:solution), cond_args)
-    # in place of @solution macro, insert into the problem's condition
-    # call to the solution function
+    # call to the solution function to be inserted into the problem's condition
     if isnothing(idx_solution)
         sol_expr = nothing
     else

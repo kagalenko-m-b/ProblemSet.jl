@@ -6,8 +6,8 @@ using Random
 export TokenText, SubSet, @problem, @problemset, @questions_str, latex_preamble
 export problemset_latex
 
-# const PSet = AbstractVector{<:Function}
-const SubSet = Pair
+const PSet = AbstractVector{<:Function}
+const SubSet = Pair{<:Integer,<:PSet}
 
 struct TokenText
     strings::Vector{<:AbstractString}
@@ -42,48 +42,56 @@ function latex_preamble(
     \\setsansfont{Liberation Sans}\n\n"""
 end
 
+
 function select_problems(
     num_variants::Integer,
-    set_size::Integer,
-    subsets::AbstractVector{<:SubSet}
+    subsets
     )
     num_subsets = length(subsets)
     if length(subsets) > 1
         isempty(intersect((x->x.second).(subsets)...)) ||  @warn "subsets overlap"
     end
-    problems_idx = zeros(Int, num_variants, 0)
+    # how many problems in each variant
+    num_problems_total = sum(num_problems for (num_problems,_) in subsets)
+    # enable finding unique index of a problem for seeding the random nuber generator
+    problems_all = unique(mapreduce(x->x[2], vcat, subsets))
+    problem_index = Dict(prob=>k for (k,prob) in enumerate(problems_all))
+    #
+    problems = Matrix{Function}(undef, num_variants, num_problems_total)
+    num_problems_assigned = 0
     for n in 1:num_subsets
-        problems_idx = hcat(problems_idx,
-                            select_problems(num_variants, set_size, subsets[n]))
+        num_problems,problem_set = subsets[n]
+        num_range = 1:length(problem_set)
+        columns_idx = num_problems_assigned + 1:num_problems_assigned+num_problems
+        problems_idx = select_unique(num_variants, num_problems, num_range)
+        problems[:,columns_idx] = problem_set[problems_idx]
+        num_problems_assigned += num_problems
     end
-    
-    return problems_idx
+
+    return problems,problem_index
 end
 
-function select_problems(
+"""
+Select `num_variants` variants, making sure indices are unique within each variant
+and problems are reused within different variants as little as possible.
+"""
+function select_unique(
     num_variants::Integer,
-    set_size::Integer,
-    subset::SubSet
+    num_problems::Integer,
+    num_range::AbstractVector
     )
-    num_problems,num_range = subset
-    if maximum(num_range) > set_size
-            throw(ArgumentError("subset specification $(subset) has greater range "
-                                *"than the number of available problems: $set_size"))
-    end
     range_len = length(num_range)
     range_unique_len = length(unique(num_range))
-    if range_unique_len < num_problems
-        throw(ArgumentError("can't select $num_problems unique problems from "
-                            *" subset specification with $range_unique_len unique problems"))
-    end
-    # use randperm() to minimize the repeated assignments of the same problem
-    # increase the number of repetitons by one, ensuring that 'while true'
+    @assert(range_unique_len >= num_problems, "can't select $num_problems unique problems "*
+        "from subset specification with $range_unique_len unique problems")
+    # use randperm() to minimize the repeated variants of the same problem
+    # increase the number of repetitions by one, ensuring that 'while true'
     # loop below hits the break condition
     n_repeat = div(num_variants*num_problems, range_len, RoundUp) + 1
     idx = randperm(range_len*n_repeat)
     # For simplicity, this array implements a queue by means of push!() and popfirst!()
     range_idx = repeat(num_range, n_repeat)[idx]
-    problem_idx = -ones(eltype(num_range), num_variants, num_problems)
+    problem_idx = zeros(eltype(num_range), num_variants, num_problems)
     for k in 1:num_variants
         problem_idx[k, 1] = popfirst!(range_idx)
         for n in 2:num_problems
@@ -110,7 +118,7 @@ end
 Generate the latex source of the problems and solutions.
 
 # Arguments
-- `student_names::AbstractVector{String}`: Students' names
+- `variants::AbstractVector{String}`: Students' names
 - `problems::AbstractVector{Function}`: Vector of functions defined using @problem macro
 - `subsets::Union{SubSet,Vector{<:SubSet}}`: Subset specification or vector of specifications
 - `rng_seed::Integer`: Random number generator's seed to make generated sets repeatable
@@ -122,9 +130,10 @@ Generate the latex source of the problems and solutions.
 - `txt_sol::String`: LaTeX source of the soltuion for the problem set
 
 Subset specifications instructs the function how to pick problems to be assigned to a
-student from the supplied vector. For example, the specification [1=>1:3, 2=>4:7]
+student from the supplied vector. For example, the specification
+[1=>problems[1:3], 2=>problems[4:7]]
 will select one out of the first three problems, two out of the problems four to seven
-and then combine the results. If the ranges overlap, only unique problem numbers are kept.
+and then combine the results.
 
 # Example
 ```julia-repl
@@ -136,32 +145,32 @@ julia> write("solutions.tex", latex_preamble*txt);
 ```
 """
 function problemset_latex(
-    student_names::AbstractVector{<:AbstractString},
-    problems::AbstractVector{<:Function},
-    subsets::Union{Pair,AbstractVector{<:Pair}},
-    rng_seed::Integer;
+    variants::AbstractVector{<:AbstractString},
+    rng_seed::Integer,
+    subsets::Vararg{SubSet};
     set_title::String="",
     problem_title="Problem"
     )
-    N = length(student_names)
-    M = length(problems)
+    N = length(variants)
     txt = "\\begin{document}\n"
     txt_sol = txt
-    problems_active = select_problems(N, M, subsets)
+    problems,problem_index = select_problems(N, subsets)
     for n in 1:N
         if !isempty(set_title)
             txt *= "{\\centering\n\\textbf{$set_title}\\\\\n}"
         end
-        txt *= "\\section{$(student_names[n])}\n"
-        txt_sol *= "\\section{$(student_names[n])}\n"
-        for p in problems_active[n, :]
-            Random.seed!(rng_seed + n + p)
-            pr = problems[p]
-            data = pr()
-            condition = build_text(:text, pr, data)
-            solution =  build_text(:solution_text, pr, data)
-            txt *= "\\underline{$(problem_title) $(p):}\n\n$(condition)\\\\\n"
-            txt_sol *= "\\underline{$(problem_title) $(p):}\n\n$(solution)\\\\\n"
+        section_head = "\\section{$(variants[n])}\n"
+        txt *= section_head
+        txt_sol *= section_head
+        for problm in problems[n, :]
+            p_index = problem_index[problm]
+            Random.seed!(rng_seed + n + p_index)
+            data = problm()
+            condition = build_text(:text, problm, data)
+            solution =  build_text(:solution_text, problm, data)
+            problem_head = "\\underline{$(problem_title) $(p_index):}\n\n"
+            txt *= problem_head*"$(condition)\\\\\n"
+            txt_sol *= problem_head*"$(solution)\\\\\n"
         end
         txt *= "\\newpage\n"
         txt_sol *= "\\newpage\n"
@@ -171,11 +180,26 @@ function problemset_latex(
     return txt,txt_sol
 end
 function problemset_latex(
-    number_variants::Integer, problems, subsets, rng_seed;
+    number_variants::Integer, rng_seed::Integer, subsets...;
     set_title::String="", problem_title="Problem"
     )
-    nms = ["" for k in 1:number_variants]
-    problemset_latex(nms, problems, subsets,  rng_seed; set_title, problem_title)
+    nms = [" " for k in 1:number_variants]
+    println(typeof(subsets))
+    problemset_latex(nms,  rng_seed, subsets...; set_title, problem_title)
+end
+
+function problemset_latex(
+    variants,
+    problems::AbstractVector{<:Function},
+    subsets_old::Union{Pair,AbstractVector{<:Pair}},
+    rng_seed::Integer;
+    set_title::String="",
+    problem_title="Problem"
+    )
+    @warn("This method is deprecated and will be removed in future versions", maxlog=1)
+    subsets = (num_problems=>problems[problems_idx]
+               for (num_problems, problems_idx) in subsets_old)
+    problemset_latex(variants, rng_seed, subsets...; set_title, problem_title)
 end
 
 function build_text(kind::Symbol, pr::Function, var_data::NamedTuple)
