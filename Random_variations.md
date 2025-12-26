@@ -64,9 +64,9 @@ that contains three functions `my_set_pool()`, `my_set_addition()` and
 `my_set_subtraction()`. Text-generating function makes use of their
 [methods](Generated_methods.md). This is how an assignment may be produced:
 ```julia
-student_names = ["A", "B", "C", "D"];
+variants = ["A", "B", "C", "D"];
 rng_seed = 123;
-txt,txt_sol =  problemset_latex(student_names, my_set, 2=>1:3, rng_seed);
+txt,txt_sol =  problemset_latex(variants, rng_seed, 2=>my_set);
 write("problems.tex", latex_preamble()*txt);
 write("solutions.tex", latex_preamble()*txt);
 ```

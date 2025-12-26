@@ -14,10 +14,10 @@ This creates a workspace vector named `question_set` that contains ten functions
 an individual assignment to contain one question from the first half of the vector
 and two questions from the second half. That may be accomplished as follows:
 ```julia
-student_names = ["A", "B", "C", "D"];
+variants = ["A", "B", "C", "D"];
 rng_seed = 123;
-subsets =  [1=>1:5, 2=>6:10]
-txt, =  problemset_latex(student_names, question_set, subsets, rng_seed);
+subsets =  question_set[1=>1:5, 2=>6:10]
+txt, =  problemset_latex(variants, rng_seed, subsets);
 write("questions.tex", latex_preamble()*txt);
 ```
 
