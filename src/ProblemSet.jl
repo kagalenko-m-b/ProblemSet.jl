@@ -4,7 +4,7 @@ using MacroTools
 using Random
 
 export TokenText, SubSet, @problem, @problemset, @questions_str, latex_preamble
-export problemset_latex
+export problemset_latex,compile_variants
 
 const PSet = AbstractVector{<:Function}
 const SubSet = Pair{<:Integer,<:PSet}
@@ -151,40 +151,17 @@ function problemset_latex(
     set_title::String="",
     problem_title="Problem"
     )
-    N = length(variants)
-    txt = "\\begin{document}\n"
-    txt_sol = txt
-    problems,problem_index = select_problems(N, subsets)
-    for n in 1:N
-        if !isempty(set_title)
-            txt *= "{\\centering\n\\textbf{$set_title}\\\\\n}"
-        end
-        section_head = "\\section{$(variants[n])}\n"
-        txt *= section_head
-        txt_sol *= section_head
-        for problm in problems[n, :]
-            p_index = problem_index[problm]
-            Random.seed!(rng_seed + n + p_index)
-            data = problm()
-            condition = build_text(:text, problm, data)
-            solution =  build_text(:solution_text, problm, data)
-            problem_head = "\\underline{$(problem_title) $(p_index):}\n\n"
-            txt *= problem_head*"$(condition)\\\\\n"
-            txt_sol *= problem_head*"$(solution)\\\\\n"
-        end
-        txt *= "\\newpage\n"
-        txt_sol *= "\\newpage\n"
+    section_head = ["\\section{$(var)}\n" for var in variants]
+    if !isempty(set_title)
+        map!(x->"{\\centering\n\\textbf{$set_title}\\\\\n}"*x, section_head)
     end
-    txt *= "\\end{document}\n"
-    txt_sol *= "\\end{document}\n"
-    return txt,txt_sol
+    compile_variants(section_head, rng_seed, subsets...; problem_title)
 end
 function problemset_latex(
     number_variants::Integer, rng_seed::Integer, subsets...;
     set_title::String="", problem_title="Problem"
     )
     nms = [" " for k in 1:number_variants]
-    println(typeof(subsets))
     problemset_latex(nms,  rng_seed, subsets...; set_title, problem_title)
 end
 
@@ -200,6 +177,42 @@ function problemset_latex(
     subsets = (num_problems=>problems[problems_idx]
                for (num_problems, problems_idx) in subsets_old)
     problemset_latex(variants, rng_seed, subsets...; set_title, problem_title)
+end
+
+function compile_variants(
+    section_head::AbstractVector{<:AbstractString},
+    rng_seed::Integer,
+    subsets::Vararg{SubSet};
+    document_head="\\begin{document}\n",
+    problem_title="Problem",
+    problem_foot="\\ \\\\\n",
+    section_foot::AbstractString="\\newpage\n"
+    )
+    N = length(section_head)
+    txt = document_head
+    txt_sol = txt
+    Random.seed!(rng_seed)
+    problems,problem_index = select_problems(N, subsets)
+    for n in 1:N
+        txt *= section_head[n]
+        txt_sol *= section_head[n]
+        for problm in problems[n, :]
+            p_index = problem_index[problm]
+            Random.seed!(rng_seed + n + p_index)
+            data = problm()
+            condition = build_text(:text, problm, data)
+            solution = build_text(:solution_text, problm, data)
+            problem_head = isempty(problem_title) ? "" : "\\underline{$(problem_title) "
+            problem_head *= "$(p_index):}\n\n"
+            txt *= problem_head*condition*problem_foot
+            txt_sol *= problem_head*solution*problem_foot
+        end
+        txt *= section_foot
+        txt_sol *= section_foot
+    end
+    txt *= "\\end{document}\n"
+    txt_sol *= "\\end{document}\n"
+    return txt,txt_sol
 end
 
 function build_text(kind::Symbol, pr::Function, var_data::NamedTuple)
