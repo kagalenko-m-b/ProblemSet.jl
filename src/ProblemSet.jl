@@ -202,8 +202,7 @@ function compile_variants(
             data = problm()
             condition = build_text(:text, problm, data)
             solution = build_text(:solution_text, problm, data)
-            problem_head = isempty(problem_title) ? "" : "\\underline{$(problem_title) "
-            problem_head *= "$(p_index):}\n\n"
+            problem_head = "\\underline{$(problem_title) $(p_index):}\n\n"
             txt *= problem_head*condition*problem_foot
             txt_sol *= problem_head*solution*problem_foot
         end
