@@ -151,12 +151,13 @@ function problemset_latex(
     set_title::String="",
     problem_title="Problem"
     )
-    section_head = ["\\section{$(var)}\n" for var in variants]
-    if !isempty(set_title)
-        map!(x->"{\\centering\n\\textbf{$set_title}\\\\\n}"*x, section_head)
-    end
-    compile_variants(section_head, rng_seed, subsets...; problem_title)
+    N = length(variants)
+    section_title = isempty(set_title) ? "" : "{\\centering\n\\textbf{$set_title}\\\\\n}"
+    section_head(n) = section_title*"\\section{$(variants[n])}\n"
+    problem_head(p_index) = "\\underline{$(problem_title) $(p_index):}\n"
+    compile_variants(N, rng_seed, subsets...; section_head, problem_head)
 end
+
 function problemset_latex(
     number_variants::Integer, rng_seed::Integer, subsets...;
     set_title::String="", problem_title="Problem"
@@ -180,37 +181,38 @@ function problemset_latex(
 end
 
 function compile_variants(
-    section_head::AbstractVector{<:AbstractString},
+    number_variants::Integer,
     rng_seed::Integer,
     subsets::Vararg{SubSet};
-    document_head="\\begin{document}\n",
-    problem_title="Problem",
-    problem_foot="\\ \\\\\n",
-    section_foot::AbstractString="\\newpage\n"
+    document_head::AbstractString="\\begin{document}\n",
+    document_foot::AbstractString="\\end{document}\n",
+    section_head::Function,
+    section_foot::AbstractString="\\newpage\n",
+    problem_head::Function,
+    problem_foot::AbstractString="\\ \\\\\n"
     )
-    N = length(section_head)
     txt = document_head
     txt_sol = txt
     Random.seed!(rng_seed)
-    problems,problem_index = select_problems(N, subsets)
-    for n in 1:N
-        txt *= section_head[n]
-        txt_sol *= section_head[n]
+    problems,problem_index = select_problems(number_variants, subsets)
+    for n in 1:number_variants
+        txt *= section_head(n)
+        txt_sol *= section_head(n)
         for problm in problems[n, :]
             p_index = problem_index[problm]
             Random.seed!(rng_seed + n + p_index)
             data = problm()
             condition = build_text(:text, problm, data)
             solution = build_text(:solution_text, problm, data)
-            problem_head = "\\underline{$(problem_title) $(p_index):}\n\n"
-            txt *= problem_head*condition*problem_foot
-            txt_sol *= problem_head*solution*problem_foot
+            txt *= problem_head(p_index)*condition*problem_foot
+            txt_sol *= problem_head(p_index)*solution*problem_foot
         end
         txt *= section_foot
         txt_sol *= section_foot
     end
-    txt *= "\\end{document}\n"
-    txt_sol *= "\\end{document}\n"
+    txt *= document_foot
+    txt_sol *= document_foot
+
     return txt,txt_sol
 end
 
