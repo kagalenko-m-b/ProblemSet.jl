@@ -2,7 +2,7 @@ using Aqua
 
 @testset "Aqua.jl" begin
   Aqua.test_all(
-    ProblemSet;
+    ProblemSets;
     deps_compat=(ignore=[:Random],),
   )
 end

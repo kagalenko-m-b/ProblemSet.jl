@@ -1,7 +1,7 @@
-name = "ProblemSet"
-uuid = "806f51fd-16a3-4f55-bd44-f0d72f9cf926"
+name = "ProblemSets"
+uuid = "55e3fc5a-415a-49aa-b08a-13f5b2ba4882"
 authors = ["kagalenko-m-b <16374215+kagalenko-m-b@users.noreply.github.com>"]
-version = "0.9.3"
+version = "0.10"
 
 [deps]
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"

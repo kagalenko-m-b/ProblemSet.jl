@@ -1,6 +1,6 @@
-# ProblemSet
+# ProblemSets
 
-[![Build Status](https://github.com/kagalenko-m-b/ProblemSet.jl/workflows/CI/badge.svg)](https://github.com/kagalenko-m-b/ProblemSet.jl/actions)
+[![Build Status](https://github.com/kagalenko-m-b/ProblemSets.jl/workflows/CI/badge.svg)](https://github.com/kagalenko-m-b/ProblemSets.jl/actions)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 This package facilitates creation of  assignments for a group of students. It allows

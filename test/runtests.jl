@@ -1,4 +1,4 @@
-using ProblemSet
+using ProblemSets
 using Test
 
 include("Aqua.jl")
@@ -146,10 +146,10 @@ end
 end
 
 @testset "Problem selection" begin
-    @test_throws AssertionError ProblemSet.select_unique(2, 8, 1:7)
+    @test_throws AssertionError ProblemSets.select_unique(2, 8, 1:7)
     # subsets = (1=>test_problem_set[1:2], 1=>test_problem_set[2:3])
     # @test_logs (:warn, r"overlap") ProblemSet.select_problems(10, subsets)
-    idx = ProblemSet.select_unique(100, 4, 1:10)
+    idx = ProblemSets.select_unique(100, 4, 1:10)
     @test all(allunique(idx_k) for idx_k in eachrow(idx))
 end
 

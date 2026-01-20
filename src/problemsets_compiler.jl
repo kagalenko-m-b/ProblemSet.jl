@@ -6,10 +6,12 @@ Macro to specify a set of problems.
 """
 macro problemset(set_name::Symbol, set_body)
     set_body = problemset(set_name, set_body)
+    p_names = problem_names(set_body)
     pset = quote
         $(esc(set_body))
-        $(esc(set_name)) = $(esc(:Function))[$([:($(esc(prob)))
-                                                for prob in problem_names(set_body)]...)]
+        $(esc(set_name)) = $(esc(:Function))[$([:($(esc(prob))) for prob in p_names]...)]
+        # $(esc(set_name)) = $(Expr(:tuple, Expr(:parameters, [:($(esc(prob)))
+        #                                          for prob in p_names]...)))
     end
 
     return pset
@@ -224,20 +226,8 @@ skiplinenums(exprs) = filter(e -> !(e isa LineNumberNode), exprs)
 """
 function tokenize_text(str::AbstractString, vars::AbstractVector{Symbol})
     rgx = r"%(?<var>\w+)(?<idx>\[[^\]]+\])?%"
-    funcdef = Dict(:args=>Any[:data], :body=>:(data), :kwargs=>Any[])
-    tokens = Function[]
-    for vm in eachmatch(rgx, str)
-        if !in(Symbol(vm[:var]), vars)
-            @warn("text variable $(vm[:var]) is not in problem variables")
-            funcdef[:body] = :nothing
-        else
-            var_str = "data.$(vm[:var])"
-            var_str *= isnothing(vm[:idx]) ? "" : vm[:idx]
-            var_ex = Meta.parse(var_str)
-            funcdef[:body] = var_ex
-        end
-        push!(tokens, eval(combinedef(funcdef)))
-    end
+    vms =  collect(eachmatch(rgx, str))
+    tokens = ntuple(n->eval(tokenize_match(vms[n], vars)), length(vms))
     strs = collect(eachsplit(str,rgx))
     tt = TokenText(strs, tokens)
 
@@ -246,6 +236,20 @@ end
 tokenize_text(ex::Expr, vars::AbstractVector{Symbol}) = tokenize_text(eval(ex), vars)
 tokenize_text(::Nothing, vars) = nothing
 
+function tokenize_match(vm::RegexMatch, vars::AbstractVector{Symbol})::Expr
+    funcdef = Dict(:args=>Any[:data], :body=>:(data), :kwargs=>Any[])
+    if !in(Symbol(vm[:var]), vars)
+        @warn("text variable $(vm[:var]) is not in problem variables")
+        funcdef[:body] = :nothing
+    else
+        var_str = "data.$(vm[:var])"
+        var_str *= isnothing(vm[:idx]) ? "" : vm[:idx]
+        var_ex = Meta.parse(var_str)
+        funcdef[:body] = var_ex
+    end
+
+    return combinedef(funcdef)
+end
 """
     question_set_body(questions)
 

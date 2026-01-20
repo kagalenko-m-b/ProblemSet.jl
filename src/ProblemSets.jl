@@ -1,4 +1,4 @@
-module ProblemSet
+module ProblemSets
 
 using MacroTools
 using Random
@@ -11,13 +11,13 @@ const SubSet = Pair{<:Integer,<:PSet}
 
 struct TokenText
     strings::Vector{<:AbstractString}
-    tokens::Vector{Function}
+    tokens::NTuple{N,Function} where N
     function TokenText(strings, tokens)
         @assert(length(strings) == length(tokens) + 1, "tokens must intersperse substrings")
         new(strings, tokens)
     end
 end
-include("problem_compiler.jl")
+include("problemsets_compiler.jl")
 
 function latex_preamble(
     ;font_size_pt::Integer=12, default_language=:english, landscape::Bool=false
